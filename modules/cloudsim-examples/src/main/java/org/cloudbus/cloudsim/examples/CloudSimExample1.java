@@ -46,24 +46,24 @@ public class CloudSimExample1 {
 			Calendar calendar = Calendar.getInstance(); // Calendar whose fields have been initialized with the current date and time.
  			boolean trace_flag = false; // trace events
 
-			/* Comment Start - Dinesh Bhagwat 
-			 * Initialize the CloudSim library. 
+			/* Comment Start - Dinesh Bhagwat
+			 * Initialize the CloudSim library.
 			 * init() invokes initCommonVariable() which in turn calls initialize() (all these 3 methods are defined in CloudSim.java).
-			 * initialize() creates two collections - an ArrayList of SimEntity Objects (named entities which denote the simulation entities) and 
+			 * initialize() creates two collections - an ArrayList of SimEntity Objects (named entities which denote the simulation entities) and
 			 * a LinkedHashMap (named entitiesByName which denote the LinkedHashMap of the same simulation entities), with name of every SimEntity as the key.
-			 * initialize() creates two queues - a Queue of SimEvents (future) and another Queue of SimEvents (deferred). 
-			 * initialize() creates a HashMap of of Predicates (with integers as keys) - these predicates are used to select a particular event from the deferred queue. 
+			 * initialize() creates two queues - a Queue of SimEvents (future) and another Queue of SimEvents (deferred).
+			 * initialize() creates a HashMap of of Predicates (with integers as keys) - these predicates are used to select a particular event from the deferred queue.
 			 * initialize() sets the simulation clock to 0 and running (a boolean flag) to false.
-			 * Once initialize() returns (note that we are in method initCommonVariable() now), a CloudSimShutDown (which is derived from SimEntity) instance is created 
-			 * (with numuser as 1, its name as CloudSimShutDown, id as -1, and state as RUNNABLE). Then this new entity is added to the simulation 
+			 * Once initialize() returns (note that we are in method initCommonVariable() now), a CloudSimShutDown (which is derived from SimEntity) instance is created
+			 * (with numuser as 1, its name as CloudSimShutDown, id as -1, and state as RUNNABLE). Then this new entity is added to the simulation
 			 * While being added to the simulation, its id changes to 0 (from the earlier -1). The two collections - entities and entitiesByName are updated with this SimEntity.
-			 * the shutdownId (whose default value was -1) is 0    
-			 * Once initCommonVariable() returns (note that we are in method init() now), a CloudInformationService (which is also derived from SimEntity) instance is created 
-			 * (with its name as CloudInformatinService, id as -1, and state as RUNNABLE). Then this new entity is also added to the simulation. 
-			 * While being added to the simulation, the id of the SimEntitiy is changed to 1 (which is the next id) from its earlier value of -1. 
+			 * the shutdownId (whose default value was -1) is 0
+			 * Once initCommonVariable() returns (note that we are in method init() now), a CloudInformationService (which is also derived from SimEntity) instance is created
+			 * (with its name as CloudInformatinService, id as -1, and state as RUNNABLE). Then this new entity is also added to the simulation.
+			 * While being added to the simulation, the id of the SimEntitiy is changed to 1 (which is the next id) from its earlier value of -1.
 			 * The two collections - entities and entitiesByName are updated with this SimEntity.
 			 * the cisId(whose default value is -1) is 1
-			 * Comment End - Dinesh Bhagwat 
+			 * Comment End - Dinesh Bhagwat
 			 */
 			CloudSim.init(num_user, calendar, trace_flag);
 
@@ -108,7 +108,7 @@ public class CloudSimExample1 {
 			UtilizationModel utilizationModel = new UtilizationModelFull();
 
 			Cloudlet cloudlet = new Cloudlet(id, length, pesNumber, fileSize,
-                                        outputSize, utilizationModel, utilizationModel, 
+                                        outputSize, utilizationModel, utilizationModel,
                                         utilizationModel);
 			cloudlet.setUserId(brokerId);
 			cloudlet.setGuestId(vmid);
