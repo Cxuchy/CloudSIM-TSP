@@ -175,7 +175,9 @@ Change the `mips` (Millions of Instructions Per Second) rating or the number of 
 ### Impact du nombre de VM sur le Makespan
 
 <!-- Image placeholder -->
-
+<p align="center">
+  <img src="Images/imapactMakespan.png" alt="Description" />
+</p>
 ---
 
 ### Impact de la politique sur le temps moyen de complétion
@@ -183,22 +185,16 @@ Change the `mips` (Millions of Instructions Per Second) rating or the number of 
 **Le Temps Moyen regarde du point de vue de la tâche (ou de l'utilisateur) :** En moyenne, combien de temps une tâche unique a-t-elle dû attendre dans le système avant d'être livrée ?
 
 <!-- Image placeholder -->
-
+<p align="center">
+  <img src="Images/impactTemps.png" alt="Description" />
+</p>
 Le temps moyen d'utilisation CPU est maximal 100%
 
 <!-- Image placeholder -->
+<p align="center">
+  <img src="Images/exectimetable.png" alt="Description" />
+</p>
 
-<!-- Image placeholder -->
-
-<!-- Image placeholder -->
-
-<!-- Image placeholder -->
-
-<!-- Image placeholder -->
-
-<!-- Image placeholder -->
-
-<!-- Image placeholder -->
 
 ---
 
@@ -215,6 +211,9 @@ Le temps moyen d'utilisation CPU est maximal 100%
 C'est le modèle le plus basique. Il suppose que la consommation d'énergie augmente de manière strictement proportionnelle à la charge du CPU.
 
 <!-- Image placeholder -->
+<p align="center">
+  <img src="Images/PowerModelLinear_Formula.png" alt="Description" />
+</p>
 
 **Utilisation :** Excellente approximation générale pour les évaluations standards de data centers → une référence de base.
 
@@ -225,6 +224,10 @@ C'est le modèle le plus basique. Il suppose que la consommation d'énergie augm
 Ce modèle suppose que la consommation d'énergie augmente de façon quadratique avec l'utilisation du CPU.
 
 <!-- Image placeholder -->
+<p align="center">
+  <img src="Images/PowerModelSqaure_Formula.png" alt="Description" />
+</p>
+
 
 **Utilisation :** Plus réaliste pour certains processeurs modernes, ce modèle reflète une architecture où le processeur est très économe en énergie à charge partielle.
 
@@ -235,19 +238,28 @@ Ce modèle suppose que la consommation d'énergie augmente de façon quadratique
 Ce modèle accentue encore plus l'efficacité à faible charge, avec une consommation qui augmente de façon cubique.
 
 <!-- Image placeholder -->
+<p align="center">
+  <img src="Images/PowerModelCubic_Formula.png" alt="Description" />
+</p>
+
 
 **Utilisation :** Il est souvent utilisé pour modéliser des processeurs équipés de technologies d'économie d'énergie très agressives, comme le DVFS (Dynamic Voltage and Frequency Scaling).
 
 ---
+> **Note :** <p align="center">
+>  <img src="Images/notePowerModels.png" alt="Description" />
+></p>
 
-<!-- Image placeholder -->
 
-<!-- Image placeholder -->
+<p align="center">
+>  <img src="Images/energyGraph1.png" alt="Description" />
+></p>
 
 À travers la simulation, nous observons que si le modèle **linéaire** offre une croissance prévisible de la consommation, les modèles **quadratique** et **cubique** révèlent une inefficacité énergétique croissante à haute charge, où la puissance consommée (Watts) augmente de façon **exponentielle** par rapport au gain de performance.
 
-<!-- Image placeholder -->
-
+<p align="center">
+>  <img src="Images/energyGraph2.png" alt="Description" />
+></p>
 Ce graphique illustre l'évolution de l'énergie cumulée en **kWh** au cours du temps. Il démontre que les inefficacités du modèle cubique ne sont pas seulement instantanées, mais qu'elles s'accumulent de manière exponentielle. À la fin de la période de 60 minutes, l'hôte utilisant le modèle cubique présente une consommation totale nettement supérieure aux modèles linéaire et quadratique, illustrant le surcoût énergétique lié à l'utilisation de serveurs haute performance sous forte charge sur de longues périodes.
 
 ---
