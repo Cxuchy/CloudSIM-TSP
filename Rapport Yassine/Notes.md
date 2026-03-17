@@ -57,6 +57,11 @@ L'arbitrage des ressources se fait à deux niveaux :
 ### CloudSimExample1 : Exemple de base « Hello World »
 
 Création d'une infra minimale — 1 hôte, 1 VM et un cloudlet + un Broker
+```
+mvn clean install
+mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.cloudsim.examples.CloudSimExample1"
+```
+
 
 ```
 Datacenter {
@@ -87,6 +92,11 @@ Cloudlet {
 ### CloudSimExample2 : Multi-VM et binding manuel
 
 2 cloudlets sur 2 VM différents (un même hôte)
+
+```
+mvn clean install
+mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.cloudsim.examples.CloudSimExample2"
+```
 
 ```
 Datacenter {
@@ -124,6 +134,11 @@ Cloudlet (x2) {
 
 Les deux cloudlets commencent au même temps t=0, puisqu'ils partagent le CPU ils prennent 2 fois le temps pour finir.
 
+```
+mvn clean install
+mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.cloudsim.examples.CloudSimExample3"
+```
+
 <!-- Image placeholder -->
 <p align="center">
   <img src="Images/eg3.png" alt="Description" />
@@ -133,6 +148,10 @@ Les deux cloudlets commencent au même temps t=0, puisqu'ils partagent le CPU il
 ### CloudSimExample4 : Deux Brokers qui gèrent le workload dans un même datacenter
 
 1 hôte / 2 VM un par broker / 2 cloudlets 1 par broker
+```
+mvn clean install
+mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.cloudsim.examples.CloudSimExample4"
+```
 
 <!-- Image placeholder -->
 <p align="center">
@@ -141,6 +160,11 @@ Les deux cloudlets commencent au même temps t=0, puisqu'ils partagent le CPU il
 ---
 
 ### NetworkExampleTest
+```
+mvn clean install
+mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.cloudsim.examples.network.NetworkExample1"
+```
+
 
 <!-- Image placeholder -->
 <p align="center">
@@ -265,9 +289,10 @@ Ce graphique illustre l'évolution de l'énergie cumulée en **kWh** au cours du
 ---
 
 ## DVFS
-
-<!-- Image placeholder -->
-
+Le DVFS (Dynamic Voltage and Frequency Scaling) est une technique de gestion de l'énergie au niveau matériel. Elle ajuste dynamiquement la tension et la fréquence de fonctionnement d'un processeur en fonction de son utilisation actuelle. Abaisser la fréquence pendant les périodes de faible charge de travail réduit la consommation d'énergie, tandis que l'augmenter pendant les pics de demande garantit que les applications répondent à leurs exigences de performance.
+<p align="center">
+<img src="Images/dvfs.png" alt="Description" />xx
+</p>
 ---
 
 ## VM Placement Policies
