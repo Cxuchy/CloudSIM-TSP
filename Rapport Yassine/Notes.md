@@ -166,6 +166,9 @@ mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.c
 ```
 
 
+
+
+
 <!-- Image placeholder -->
 <p align="center">
   <img src="Images/eg5.png" alt="Description" />
@@ -174,9 +177,55 @@ mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.c
 
 ## Étude sur le temps d'exécution
 
-### Variation de la taille de cloudlets
+### 1. Variation de la taille de cloudlets
 
 Change the length (in Millions of Instructions or MI) of the Cloudlets. Run the simulation and record the new execution times.
+```
+Le but est de démontrer comment la taille d'une tâche (Cloudlet Length) influence directement son temps d'exécution dans un environnement Cloud.
+```
+5 scénarios différents. À chaque itération, on augmente la longueur du Cloudlet (de 100 000 à 800  000 MI - Millions d'Instructions) tout en gardant la puissance de la machine virtuelle (VM) constante.
+```
+mvn clean install
+mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.cloudsim.examples.custom.CC0_CloudletSize"
+```
+```
+Datacenter (x1)
+{
+Architecture : x86, OS : Linux, VMM : Xen
+Coûts : 3.0 (CPU), 0.05 (RAM), 0.001 (Stockage).
+Nombre : 1 instance créée à chaque itération.
+}
+
+
+Host (x1 par Datacenter)
+{
+Processeur (PE) : 1 CPU de 1000 MIPS.
+RAM : 2048 Mo.
+Stockage : 1 000 000 Mo.
+Bande passante : 10 000.
+Politique : VmSchedulerTimeShared (Partage de temps entre VMs).
+}
+
+
+VM (x1 par simulation)
+{
+Puissance : 1000 MIPS (1 CPU virtuel).
+RAM : 512 Mo.
+Taille Image : 10 000 Mo.
+Bande passante : 1000.
+Ordonnanceur : CloudletSchedulerTimeShared.
+}
+
+
+Cloudlet (x1 par simulation)
+{
+Nombre de tests : 5 itérations avec des tailles différentes.
+Longueurs (MI) : 100 000, 200 000, 400 000, 600 000, 800 000.
+Fichiers : 300 (Input/Output).
+Utilisation : UtilizationModelFull (100% des ressources VM consommées).
+}
+
+```
 
 <!-- Image placeholder -->
 <p align="center">
@@ -186,9 +235,15 @@ Change the length (in Millions of Instructions or MI) of the Cloudlets. Run the 
 
 ---
 
-### Task 7: Vary VM processing power
+### 2. Impact de la puissance CPU sur le temps d'éxecution.
+L'objectif est de démontrer l'impact de la puissance CPU (exprimée en MIPS) sur le temps de traitement d'une tâche fixe.
+<br>
+On fixe la taille du Cloudlet à 400 000 MI et fait varier la capacité de la VM de 250 à 4000 MIPS.
 
-Change the `mips` (Millions of Instructions Per Second) rating or the number of `pesNumber` (CPUs/Cores) assigned to the VMs.
+```
+mvn clean install
+mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.cloudsim.examples.custom.CC2_MIPS_SIZE"
+```
 
 <!-- Image placeholder -->
 <p align="center">
@@ -196,7 +251,18 @@ Change the `mips` (Millions of Instructions Per Second) rating or the number of 
 </p>
 ---
 
-### Impact du nombre de VM sur le Makespan
+### 3. Impact du nombre de VM sur le Makespan
+
+```
+mvn clean install
+mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.cloudsim.examples.custom.CC3_Scheduling_VM_SIZE"
+```
+On compare le temps total d'exécution pour 8 tâches en augmentant le nombre de ressources (1, 2, puis 4 VMs).
+### Observation clé : 
+Plus tu ajoutes de VMs, plus le Makespan diminue.
+
+- Avec 1 VM, les tâches doivent attendre ou se partager un seul processeur. <br>
+- Avec 4 VMs, les tâches sont distribuées, ce qui divise le temps total de traitement par 4 (parallélisme).
 
 <!-- Image placeholder -->
 <p align="center">
@@ -204,21 +270,42 @@ Change the `mips` (Millions of Instructions Per Second) rating or the number of 
 </p>
 ---
 
-### Impact de la politique sur le temps moyen de complétion
+### 4. Impact de la politique sur le temps moyen de complétion
 
-**Le Temps Moyen regarde du point de vue de la tâche (ou de l'utilisateur) :** En moyenne, combien de temps une tâche unique a-t-elle dû attendre dans le système avant d'être livrée ?
+
+```
+mvn clean install
+mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.cloudsim.examples.custom.CC3_Scheduling_VM_SIZE"
+```
 
 <!-- Image placeholder -->
 <p align="center">
   <img src="Images/impactTemps.png" alt="Description" />
 </p>
-Le temps moyen d'utilisation CPU est maximal 100%
+
+Ici, on ne regarde plus la fin de la simulation, mais le confort de chaque tâche <br>
+On compare les deux modes d'ordonnancement pour chaque configuration de VM :
+
+- SpaceShared (Exclusif) : Une tâche prend toute la place. Les autres attendent s'il n'y a plus de VM libre.
+
+- TimeShared (Partagé) : Toutes les tâches avancent en même temps, mais moins vite (elles se partagent les MIPS).
+
+### Observation clé :
+En SpaceShared, le temps moyen est impacté par la file d'attente. <br>
+En TimeShared, le temps moyen est impacté par la dégradation de la vitesse (puisque le CPU est divisé entre les tâches).
+
 
 <!-- Image placeholder -->
-<p align="center">
+<p align="center"> 
   <img src="Images/exectimetable.png" alt="Description" />
+Le temps moyen d'utilisation CPU est maximal 100%
 </p>
 
+``` 
+Notes : 
+Makespan : Le temps total nécessaire pour terminer l'ensemble des tâches.
+Temps Moyen : La durée moyenne d'exécution d'une tâche.
+```
 
 ---
 

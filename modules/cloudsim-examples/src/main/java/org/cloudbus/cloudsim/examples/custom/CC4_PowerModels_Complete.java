@@ -1,4 +1,4 @@
-package org.cloudbus.cloudsim.examples;
+package org.cloudbus.cloudsim.examples.custom;
 
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
@@ -23,7 +23,7 @@ import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
 
-public class CC_PowerModels_Complete {
+public class CC4_PowerModels_Complete {
 
     public static void main(String[] args) {
         try {
