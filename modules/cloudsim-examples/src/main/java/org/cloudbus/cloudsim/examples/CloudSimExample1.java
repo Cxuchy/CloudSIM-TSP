@@ -81,15 +81,15 @@ public class CloudSimExample1 {
 
 			// VM description
 			int vmid = 0;
-			int mips = 1000;
+			int mips = 1000;    //1000
 			long size = 10000; // image size (MB)
 			int ram = 512; // vm memory (MB)
 			long bw = 1000;
 			int pesNumber = 1; // number of cpus
 			String vmm = "Xen"; // VMM name
 
-			// create VM
-			Vm vm = new Vm(vmid, brokerId, mips, pesNumber, ram, bw, size, vmm, new CloudletSchedulerTimeShared());
+			// create VM (deafult : TimeShared)
+			Vm vm = new Vm(vmid, brokerId, mips, pesNumber, ram, bw, size, vmm, new CloudletSchedulerSpaceShared());
 
 			// add the VM to the vmList
 			vmlist.add(vm);
@@ -102,7 +102,7 @@ public class CloudSimExample1 {
 
 			// Cloudlet properties
 			int id = 0;
-			long length = 400000;
+			long length = 400000; //400 000 natif
 			long fileSize = 300;
 			long outputSize = 300;
 			UtilizationModel utilizationModel = new UtilizationModelFull();
@@ -112,6 +112,19 @@ public class CloudSimExample1 {
                                         utilizationModel);
 			cloudlet.setUserId(brokerId);
 			cloudlet.setGuestId(vmid);
+
+			//-----------Ajout d un 2e Cloudlet--------
+
+			Cloudlet cloudlet2 = new Cloudlet(1, 400000, pesNumber, fileSize,
+  							                 outputSize,
+  							                 utilizationModel,
+  							                 utilizationModel, utilizationModel);
+			cloudlet2.setUserId(brokerId);
+			cloudlet2.setGuestId(vmid);
+
+			cloudletList.add(cloudlet2);
+			// ------------------
+
 
 			// add the cloudlet to the list
 			cloudletList.add(cloudlet);
@@ -153,7 +166,7 @@ public class CloudSimExample1 {
 		// In this example, it will have only one core.
 		List<Pe> peList = new ArrayList<>();
 
-		int mips = 1000;
+		int mips = 1000; //1000 avant
 
 		// 3. Create PEs and add these into a list.
 		peList.add(new Pe(new PeProvisionerSimple(mips))); // need to store Pe id and MIPS Rating

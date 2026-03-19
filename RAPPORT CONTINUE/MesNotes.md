@@ -266,14 +266,24 @@ __PE__ = Un cœur physique avec une capacité en MIPS
 List<Pe> peList = new ArrayList<>();
 
 peList.add(new Pe(0, new PeProvisionerSimple(1000))); // 1 cœur à 1000 MIPS
-peList.add(new Pe(1, new PeProvisionerSimple(1000))); // 2 cœurs au total
+
+peList.add(new Pe(1, new PeProvisionerSimple(1000))); // 2e cœur
 ```
+
+NB : Chaque ligne ajoute un (01) coeurs
 
 __VmScheduler__ = Partage des cœurs entre VMs
 
 ```
-new VmSchedulerTimeShared(peList)   // les VMs partagent les cœurs
-new VmSchedulerSpaceShared(peList)  // chaque VM a ses cœurs dédiés
+new VmSchedulerTimeShared(peList) :  Les VMs partagent les cœurs et
+                                     L'exécution se fait en simultané
+                                     Chaque VM reçoit une fraction des MIPS
+                                     (ex: 2 VMs sur 1000 MIPS → 500 MIPS chacune)
+
+new VmSchedulerSpaceShared(peList) : Chaque VM obtient un cœur dédié exclusif
+                                     - Si un cœur est disponible → VMs créées immédiatement
+                                     - Si aucun cœur disponible  → VM en attente (même datacenter)
+                                                                  → OU broker cherche ailleurs
 ```
 
 ### Methodes Utiles 
@@ -502,3 +512,641 @@ Divise le MIPS également entre tous les Cloudlets
 - Plus équitable, plus proche du comportement réel des OS
 
 __Dans CloudSim c'est CloudletSchedulerDynamicWorkload__
+
+
+
+
+
+
+
+
+# ============= __SEMAINE 3__ ==============
+
+## CloudSimExample1.java
+
+Ceci est un exemple simple de simulation avec CloudSim pour modéliser l’exécution de tâches dans un cloud.
+
+Ce fichier : 
+
+- Initialise l’environnement de simulation et crée un Datacenter et un DatacenterBroker.
+
+- Configure une machine virtuelle (VM) et deux cloudlets (tâches à exécuter).
+
+- Lance la simulation puis affiche les résultats : VM utilisée, temps d’exécution, début et fin des tâches.
+
+
+__1. Initialisation de Cloudsim__
+
+```
+int num_user = 1;                                 // 1 seul utilisateur/broker
+boolean trace_flag = false;                       // pas de log détaillé
+CloudSim.init(num_user, calendar, trace_flag);
+```
+
+__2. Creation du datacenter__
+
+```
+Datacenter datacenter0 = createDatacenter("Datacenter_0");
+```
+
+Dans `createDatacenter()` :
+```
+// 1 seul cœur physique à 1000 MIPS
+peList.add(new Pe(new PeProvisionerSimple(1000)));
+
+// 1 seul hôte
+new Host(
+    new RamProvisionerSimple(2048),     // 2 GB RAM
+    new BwProvisionerSimple(10000),     // 10 Gbps
+    1000000,                            // 1 TB stockage
+    peList,
+    new VmSchedulerTimeShared(peList)   // partage TimeShared
+)
+
+// Datacenter basique : Pas de mesure énergie ici (Car Non Using de PowerDatacenter)
+new Datacenter(name, characteristics,
+    new VmAllocationPolicySimple(hostList), ...)
+```
+
+__3. Creation du Broker__ : 
+```
+broker = new DatacenterBroker("Broker");
+```
+
+__4. Création de la VM__
+
+```
+int mips = 1000;                  // puissance de calcul
+int pesNumber = 1;                // 1 seul cœur
+int ram = 512;                    // 512 MB RAM
+long bw = 1000;                   // bande passante
+new CloudletSchedulerTimeShared() // ordonnancement TimeShared
+```
+
+__5. Création du Cloudlet__
+
+```
+long length = 400000;      // 400 000 MI
+int pesNumber = 1;         // 1 cœur
+new UtilizationModelFull() // utilise 100% des ressources
+```
+
+### Tests 
+
+`Remarques:` Recompiler après chaque modif. comme ci-dessous :
+
+#### Commande :
+
+```
+cd ~/Documents/TSP_S2/Cassiopee/CloudSIM-TSP
+mvn clean install -DskipTests -q && cd modules/cloudsim-examples && mvn exec:java -Dexec.mainClass="org.cloudbus.cloudsim.examples.CloudSimExample1" 2>/dev/null | grep -A 200 "========== OUTPUT =========="
+```
+
+
+### Test_0 : Execution de l'example 1
+![Images](./Images/S3_ex1_natif.png)
+
+
+###  Variations des Paramètres
+
+- Test_1 : Variation de la Puissance du VM.mips= 2000, 500, 100
+- Test_2 : Varaiation de la taille du Cloudlet
+
+#### Leçons :
+
+```
+1. MIPS VM ≤ MIPS HÔTE   ( Sinon, Aucun Cloudlet sera crée)
+
+2. REGLE : Temps = cloudletLength ÷ mips
+
+3. Le Temps d'exécution varie en fonction de ces paramètres ci-dessous :
+
+- Cloudlet :
+    - Taille
+    - Nombre
+
+- VM et Serveur : MIPS
+```
+
+#### Test_3 : Cloudlets Identiques + TimeShared( new CloudletSchedulerTimeShared() )
+
+__Paramètres__ = 2 Cloudlets de 400 000 MI sur 1 VM à 1000 MIPS.
+ 
+```
+"TimeShared" --> Partage égal des mips entre Cloudlets : 1000 ÷ 2 = 500 MIPS
+                 Et les deux s'executent en parallèle
+```
+
+##### Sortie :
+
+![Images](./Images/S3_ex1_mips_timeshared.png)
+
+
+#### Test_4 : 2 Cloudlets Identiques + SpaceShared ( CloudletSchedulerSpaceShared() )
+
+```
+Le 1er Commence fini, et l'autre debute ....Ainsi de suite.
+```
+
+##### Sortie :
+
+![Images](./Images/S3_ex1_mips_spaceshared.png)
+
+
+##### Remarques :
+
+- SpaceShared est plus efficace en __temps moyen__ (600 vs 800 sec) mais crée de l'attente pour certaines tâches.
+
+- TimeShared est plus équitable : tout le monde finit en même temps mais plus tard.
+
+
+
+
+
+
+
+## CloudSimExample2.java
+
+Exemple de simulation avec __2 VMs__ et __2 Cloudlets__ sur __un seul hôte__ (serveur), __chaque tâche__ (cloudlets) étant explicitement __liée à une VM dédiée__.
+
+Ce fichier :
+
+- Initialise l'environnement de simulation et crée un seul Datacenter avec un hôte à 1000 MIPS et un DatacenterBroker.
+
+- Configure 2 VMs identiques à 250 MIPS chacune avec un ordonnancement TimeShared.
+```
+Vm vm1 = new Vm(brokerId, mips, pesNumber, ram, bw, size, vmm, new CloudletSchedulerTimeShared());
+Vm vm2 = new Vm(brokerId, mips, pesNumber, ram, bw, size, vmm, new CloudletSchedulerTimeShared());
+```
+
+- Crée 2 Cloudlets identiques de 250 000 MI et les lie explicitement chacun à une VM via bindCloudletToVm().
+
+```
+broker.bindCloudletToVm(cloudlet1.getId(), vm1.getId());
+```
+
+- Lance la simulation puis affiche les résultats :`Time`, `Start Time`, `Finish Time`, ...
+
+
+### Tests
+
+### Test_0 : Execution
+
+```
+cd ~/Documents/TSP_S2/Cassiopee/CloudSIM-TSP
+mvn clean install -DskipTests -q && cd modules/cloudsim-examples && mvn exec:java -Dexec.mainClass="org.cloudbus.cloudsim.examples.CloudSimExample2" 2>/dev/null | grep -A 200 "========== OUTPUT =========="
+```
+
+![Images](./Images/S3_ex2_natif.png)
+
+### Remarques :
+
+Aucune variation importante des paramètres n’a été réalisée dans cet exemple car les conclusions resteraient identiques à celles de l’Example1 concernant la relation entre la taille du Cloudlet et la puissance MIPS.
+
+Cependant l’objectif principal de cet exemple est plutôt de montrer __l’exécution parallèle de tâches sur plusieurs machines virtuelles__ ainsi que __l’association explicite entre Cloudlets et VMs via le broker__, d'ou les deux (2) tests ci-dessous :
+
+
+### Test_1 : Suppression du Binding + Ajout de 2 autres cloudlets (tâches)
+
+__On commente le binding :__
+```
+//broker.bindCloudletToVm(cloudlet1.getCloudletId(),vm1.getId());
+//broker.bindCloudletToVm(cloudlet2.getCloudletId(),vm2.getId());
+```
+__Création des Cloudets et Integration dans la liste :__
+```
+Cloudlet cloudlet3 = new Cloudlet(length, pesNumber, fileSize, outputSize,
+                               utilizationModel, utilizationModel, utilizationModel);
+cloudlet3.setUserId(brokerId);
+
+Cloudlet cloudlet4 = new Cloudlet(length, pesNumber, fileSize, outputSize,
+                               utilizationModel, utilizationModel, utilizationModel);
+cloudlet4.setUserId(brokerId);
+
+
+cloudletList.add(cloudlet3);
+cloudletList.add(cloudlet4);
+```
+
+#### Sortie 
+
+![Images](./Images/S3_ex2_sansbind.png)
+
+
+#### Interprétation :
+
+Dans cette expérience, le nombre de cloudlets a été augmenté à quatre alors que seulement deux machines virtuelles sont disponibles.
+
+Le `broker` distribue les tâches entre les VMs selon une politique simple de `type round-robin` (par défaut, car "binding" commenté). Chaque VM reçoit donc deux cloudlets.
+
+Et comme l’ordonnanceur utilisé est `CloudletSchedulerTimeShared`, les tâches exécutées sur une même VM partagent la puissance CPU.
+__La capacité de calcul__ de la VM (250 MIPS) est donc __divisée entre les deux cloudlets__, ce qui entraîne une diminution de la puissance disponible pour chaque tâche et double le temps d’exécution, passant de 1000 s à environ 2000 s.
+
+
+## CloudSimExample3.java
+
+Exemple de simulation avec __deux (02) VMs de puissances différentes sur un datacenter à 2 hôtes__, pour observer l'impact du MIPS sur le temps d'exécution.
+
+Ce fichier : 
+- Crée un Datacenter avec 2 hôtes identiques à 1000 MIPS chacun.
+    ```
+    hostList.add(new Host(...peList...));   // Hôte 1 : 1000 MIPS
+    hostList.add(new Host(...peList2...));  // Hôte 2 : 1000 MIPS
+    ```
+- Configure 2 VMs de puissances différentes :
+    - VM1 : 250 MIPS
+    - VM2 : 500 MIPS (le double)
+    ```
+    Vm vm1 = new Vm(brokerId, mips, ...);        // mips = 250 MIPS
+
+    Vm vm2 = new Vm(brokerId, mips * 2, ...);    // mips * 2 = 500 MIPS
+    ```
+
+- Crée 2 Cloudlets identiques de 40 000 MI liés chacun à une VM.
+- Pas de mesure d'énergie — uniquement les temps d'exécution.
+
+
+### Test_0 : Execution
+
+```
+cd ~/Documents/TSP_S2/Cassiopee/CloudSIM-TSP
+mvn clean install -DskipTests -q && cd modules/cloudsim-examples && mvn exec:java -Dexec.mainClass="org.cloudbus.cloudsim.examples.CloudSimExample3" 2>/dev/null | grep -A 200 "========== OUTPUT =========="
+```
+
+#### Sortie :
+
+![Images](./Images/S3_ex3_natif.png)
+
+#### Interpretation :
+
+VM2 est 2 fois plus puissante que VM1 et donc finit 2 fois plus vite :
+```
+40 000 ÷ 500 = 80 sec  
+40 000 ÷ 250 = 160 sec 
+```
+
+#### Remarques :
+
+Pour cet exemple, les variations utiles seraient juste de rejouer ce qu'on a déjà fait sur l'exemple1 (changer MIPS, length...) : __on ne découvrirait rien de nouveau__.
+
+Ce qu'Example3 apportait de nouveau c'était :
+- 2 hôtes dans le datacenter
+- 2 VMs de puissances différentes
+
+Ces deux points sont compris et confirmés par les résultats ci-dessus.
+
+
+
+
+## CloudSimExample4.java
+
+Exemple de simulation avec 2 datacenters distincts, chacun avec un hôte en `SpaceShared`, pour observer la répartition des VMs sur plusieurs datacenters.
+
+Ce fichier : 
+
+- Crée 2 Datacenters distincts (Datacenter_0 et Datacenter_1) chacun avec 1 hôte à 1000 MIPS.
+
+Ici, les hôtes utilisent `VmSchedulerSpaceShared` au lieu de TimeShared. Donc chaque VM obtient un cœur dédié.
+
+- Configure 2 VMs identiques à 250 MIPS avec `CloudletSchedulerTimeShared`.
+- Crée 2 Cloudlets identiques de 40 000 MI liés chacun à une VM.
+- Le broker est créé via une méthode dédiée createBroker()
+
+#### Sortie :
+
+![Images](./Images/S3_ex4_natif.png)
+
+
+## Exemples : 5, 6, 7, 8 et 9.
+
+
+```
+Ces tests n’ont pas été exécutés, car ils sont indirectement couverts à travers les variations de paramètres et de politiques d’ordonnancement présentées dans les exemples précédents (notamment l’Exemple 9, qui compare TimeShared et SpaceShared). Leur exécution n’aurait donc apporté aucun élément d’analyse supplémentaire.
+
+Cette remarque vaut pour certains cas ; toutefois, pour d’autres (notamment l’Exemple 8, qui décrit un GlobalBroker personnalisé créant un nouveau broker à t = 200 pendant la simulation), leur utilité immédiate n’apparaissait pas clairement.
+```
+
+
+
+## Autres Exemples : Mesure de l'energie 
+
+### Structure des exemples dans le dossier power/
+
+`planetlab/`  : Charges réelles issues de traces PlanetLab (réseau mondial de serveurs)
+
+- __Caractéristiques :__
+
+    - traces CPU collectées sur des serveurs réels
+
+    - simulation réaliste
+
+    - durée typique : 24 heures
+
+    - utilisées dans les articles scientifiques
+
+- __But :__
+
+Tester les algorithmes d’optimisation énergétique dans un environnement proche du réel.
+
+
+
+
+`__random/__` : Charges aléatoires synthétiques (Utilisation du CPU generé aléatoirement)
+
+- __Caractéristiques :__
+
+    - utilisation CPU générée par un modèle aléatoire
+
+    - plus rapide à simuler
+
+    - utile pour tests et comparaison rapide
+
+- __But :__
+
+    - valider le comportement d’un algorithme sans dépendre de traces externes
+
+
+__Les fichiers communs aux deux sont__ :
+
+
+`1. NonPowerAware` : Simulation sans gestion d'énergie
+
+- __Caractéristiques :__
+
+    - aucune consolidation de VM
+    - aucune migration
+    - aucun arrêt de serveur
+
+Tous les hôtes restent actifs.
+
+
+- __But :__
+
+```
+Servir de baseline (référence).
+```
+
+Ensuite on compare :
+
+```
+Energy avec optimisation
+         VS
+Energy sans optimisation
+```
+
+
+
+`2. Dvfs` : Dynamic Voltage Frequency Scaling
+
+
+Les noms de fichiers suivent un pattern :
+
+
+### Structure des noms de fichiers
+
+`[Algorithme][Politique de migration]`
+
+
+### Algorithmes de détection de surcharge : 
+
+```
+  Iqr  = InterQuartile Range
+  Lr   = Local Regression
+  Lrr  = Local Robust Regression
+  Mad  = Median Absolute Deviation
+  Thr  = Static Threshold
+
+Quand surcharge détectée --> Migration de VM
+```
+
+
+#### 1. Iqr — InterQuartile Range
+
+##### Principe : Analyse statistique de l'utilisation CPU
+
+Si utilisation CPU dépasse :
+
+```
+Q3 + k × IQR     avec : IQR = Q3 - Q1
+
+alors :
+
+host considéré comme surchargé
+```
+
+##### Avantage : adaptatif aux variations de charge
+
+
+#### 2. Lr — Local Regression
+
+##### Principe : régression linéaire sur l'historique CPU
+
+```
+Il prédit l'utilisation CPU future.
+
+Si surcharge prévue ---> migration anticipée
+```
+
+
+#### 3. Lrr — Local Robust Regression
+
+Version robuste de LR.
+
+__Différence :__ Moins sensible aux valeurs extrêmes (outliers)
+
+(A Utiliser quand la charge CPU instable)
+
+
+#### 4.Mad — Median Absolute Deviation
+
+Il Mesure la __dispersion autour de la médiane__.
+
+```
+Si utilisation CPU dépasse :
+
+median + k × MAD
+
+alors :
+
+host surchargé
+```
+
+
+#### 5. Thr — Static Threshold
+
+C'est une Méthode simple.
+
+Exemple :
+
+```
+CPU > 80%
+
+alors :
+
+host surchargé
+```
+
+__Inconvénient :__  non adaptatif
+
+
+
+### Politiques de migration :
+
+__Quand un host est surchargé, quelle VM migrer ?__
+
+```
+  Mc   = Minimum Correlation
+  Mmt  = Minimum Migration Time
+  Mu   = Minimum Utilization
+  Rs   = Random Selection
+```
+
+#### 1. Mc : Minimum Correlation
+
+__Principe :__
+
+```
+- On Mesure la corrélation CPU entre VMs...
+
+- Migration de la VM la moins corrélée avec les autres
+```
+
+- __But :__ réduire risque de surcharge future
+
+
+
+### 2. Mmt : Minimum Migration Time
+
+```
+On Choisit la VM la plus rapide à migrer
+```
+
+
+### 3. Mu : Minimum Utilization
+
+```
+On Choisit la VM avec la plus faible utilisation CPU
+```
+
+__Idée :__ Migrer une petite charge, plutôt qu’une grosse
+
+
+### 4. Rs : Random Selection
+
+```
+Sélection d'une VM choisie aléatoirement.
+```
+
+
+### Exemple 1 : NonPowerAware.java
+
+__NonPowereAware__  implique que Le système gère les machines virtuelles, CPU, mémoire, etc...Sans chercher à optimiser la consommation électrique.
+
+#### Description et analyse
+
+Simulation d'un datacenter qui consomme toujours à puissance maximale (Pas de gestion d'énergie). C'est la référence de base pour comparer avec les autres politiques.
+
+
+__Voici ce qui change par rapport aux exemples précédents :__
+
+__1. PowerDatacenterNonPowerAware__
+
+```
+PowerDatacenterNonPowerAware datacenter = Helper.createDatacenter("Datacenter",
+                                                    PowerDatacenterNonPowerAware.class, ...)
+```
+
+Tous les hôtes consomment 100% de leur puissance en permanence, même à vide.__
+
+__2. Paramètres externalisés dans des classes dédiées__
+
+```
+RandomConstants.NUMBER_OF_VMS         // nb de VMs → dans RandomConstants.java
+
+RandomConstants.NUMBER_OF_HOSTS       // nb d'hôtes
+
+Constants.SIMULATION_LIMIT            // durée de simulation → dans Constants.java
+
+Constants.ENABLE_OUTPUT               // activer/désactiver les logs
+```
+
+__NB__ : Ici, On ne modifiera plus le code directement, seules les constantes le seront.
+
+
+__3. Limite de simulation :__
+
+```
+CloudSim.terminateSimulation(Constants.SIMULATION_LIMIT);
+```
+
+La simulation s'arrête à un temps fixé et pas quand tous les Cloudlets sont finis.
+
+
+__4. La Sortie est plus enrichie__
+
+```
+javaHelper.printResults(datacenter, vmList, lastClock, ...)
+```
+
+Affiche énergie consommée + métriques de performance : c'est la nouveauté principale !
+
+
+#### Scenario : 
+
+```
+- 50 hôtes physiques (mix HP G4 et G5)
+- 50 VMs (mix des 4 types EC2)
+- Charges CPU aléatoires mais reproductibles
+- Simulation sur 24 heures
+
+On mesure donc l'énergie totale consommée sur 24h
+```
+
+#### Commande :
+
+```
+cd ~/Documents/TSP_S2/Cassiopee/CloudSIM-TSP && mvn clean install -DskipTests -q && cd modules/cloudsim-examples && mvn exec:java -Dexec.mainClass="org.cloudbus.cloudsim.examples.power.random.NonPowerAware" 2>/dev/null
+```
+
+Avec Filtre (Pour ne voir que l'essentiel) :
+
+```
+cd ~/Documents/TSP_S2/Cassiopee/CloudSIM-TSP && mvn clean install -DskipTests -q && cd modules/cloudsim-examples && mvn exec:java -Dexec.mainClass="org.cloudbus.cloudsim.examples.power.random.NonPowerAware" 2>/dev/null | grep -E "Energy|migration|SLA|hosts|VMs|Experiment|simulation time"
+```
+
+#### Sortie :
+
+![Images](./Images/S3_power_random1.png)
+
+#### Interprétation :
+
+La sortie se divise en 3 parties : 
+
+- Partie 1 : les logs détaillés (les Très longues lignes)
+
+- Partie 2 : Le résumé final
+
+```
+Experiment name: random_npa        
+Number of hosts: 50                
+Number of VMs: 50                  
+Total simulation time: 600,01 sec     --> Durée simulée
+Energy consumption: 1,05 kWh          --> Energie Consommée
+Number of VM migrations: 0            --> nb de migrations effectuées
+Number of host shutdowns: 50          --> nb de serveurs éteints
+```
+
+- Partie 3 : Les métriques SLA
+
+```
+SLA: NaN%                          
+SLA perf degradation: NaN%         
+SLA time per active host: 0,00%    -->  % du temps où SLA est violé
+Overall SLA violation: NaN%        --> violation globale
+Average SLA violation: 0,00%       --> violation moyenne
+```
+
+
+__SLA__ (Service Level Agreement) = Engagement de performance envers l'utilisateur. 
+
+__NaN__ (Not a Number) : Pas calculable car les Cloudlets n'ont pas de SLA défini ici.

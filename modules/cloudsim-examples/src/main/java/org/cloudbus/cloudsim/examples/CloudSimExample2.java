@@ -103,9 +103,23 @@ public class CloudSimExample2 {
 				Cloudlet cloudlet2 = new Cloudlet(length, pesNumber, fileSize, outputSize, utilizationModel, utilizationModel, utilizationModel);
 	            	cloudlet2.setUserId(brokerId);
 
-	            	//add the cloudlets to the list
-	            	cloudletList.add(cloudlet1);
-	            	cloudletList.add(cloudlet2);
+				/* Ajout du 3e et 4e Cloudlet*/
+
+
+				Cloudlet cloudlet3 = new Cloudlet(length, pesNumber, fileSize, outputSize, utilizationModel, utilizationModel, utilizationModel);
+				cloudlet3.setUserId(brokerId);
+
+				Cloudlet cloudlet4 = new Cloudlet(length, pesNumber, fileSize, outputSize, utilizationModel, utilizationModel, utilizationModel);
+				cloudlet4.setUserId(brokerId);
+
+				cloudletList.add(cloudlet3);
+				cloudletList.add(cloudlet4);
+
+				/*---------------------------------*/
+
+				//add the cloudlets to the list
+				cloudletList.add(cloudlet1);
+				cloudletList.add(cloudlet2);
 
 	            	//submit cloudlet list to the broker
 	            	broker.submitCloudletList(cloudletList);
@@ -113,8 +127,8 @@ public class CloudSimExample2 {
 
 	            	//bind the cloudlets to the vms. This way, the broker
 	            	// will submit the bound cloudlets only to the specific VM
-	            	broker.bindCloudletToVm(cloudlet1.getCloudletId(),vm1.getId());
-	            	broker.bindCloudletToVm(cloudlet2.getCloudletId(),vm2.getId());
+	            	//broker.bindCloudletToVm(cloudlet1.getCloudletId(),vm1.getId());
+	            	//broker.bindCloudletToVm(cloudlet2.getCloudletId(),vm2.getId());
 
 	            	// Sixth step: Starts the simulation
 	            	CloudSim.startSimulation();
