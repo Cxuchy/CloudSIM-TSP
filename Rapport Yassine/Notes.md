@@ -39,7 +39,6 @@ L'arbitrage des ressources se fait à deux niveaux :
 |----------------------|------------------------------------------------------------|---------------------------------------------------------|
 | **SpaceShared**      | Un seul Cloudlet occupe un cœur CPU à la fois.            | Débit constant, mais risque de file d'attente.          |
 | **TimeShared**       | Plusieurs Cloudlets se partagent le même cœur simultanément. | Risque de dégradation de performance (contexte switching). |
-| **Processor Sharing**| Division égale de la puissance CPU entre toutes les tâches actives. | Idéal pour l'analyse théorique de l'équité des ressources. |
 
 <!-- Image placeholder -->
 <p align="center">
