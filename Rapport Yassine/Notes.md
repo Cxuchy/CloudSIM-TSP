@@ -390,3 +390,61 @@ Le DVFS (Dynamic Voltage and Frequency Scaling) est une technique de gestion de 
 ## VM Migration
 
 <!-- Image placeholder -->
+
+
+## Politique de gestion dynamique des ressources 
+### Phase 1: Lay the Groundwork (Scenarios & Metrics) Before you touch any of the policies in the table, you need a standardized way to test them and measure the results.
+#### Tâche 1.1 (Conception de scénarios de charge)
+
+Dans CloudSim, la charge de travail d'une application 
+(représentée par un Cloudlet) est définie par l'interface UtilizationModel. Vous devez définir trois modèles pour chaque Cloudlet : un pour le CPU, un pour la RAM, et un pour la bande passante. Pour les simulations axées sur l'énergie, c'est l'utilisation du CPU qui est cruciale, car elle détermine la consommation électrique de l'hôte et déclenche les migrations.
+
+<br>
+CloudSim possède déjà des modèles basiques (UtilizationModelFull pour 100% et UtilizationModelNull pour 0%)
+
+#### 1. Scénario Statique (Charge constante)
+pour fixer une charge spécifique (par exemple 70%), vous devez créer une classe dédiée.
+
+
+#### 2. Scénario Cyclique (Cycle Jour/Nuit)
+Pour simuler une charge qui augmente et diminue de manière fluide au fil du temps, la méthode la plus efficace est d'utiliser une fonction mathématique sinusoïdale (Math.sin).
+
+#### 3. Scénario Burst (Pics de charge soudains)
+Ce modèle simule une application qui fonctionne normalement à faible régime, mais qui subit de temps en temps des pics d'activité massifs et soudains.
+
+
+```
+// ÉTAPE 1 : Choisir et configurer le modèle CPU que vous voulez tester
+// Exemple ici avec le modèle Cyclique (20% min, 90% max, un cycle tous les 100 ticks de temps)
+UtilizationModel cpuModel = new UtilizationModelCyclic(0.20, 0.90, 100); 
+
+// ÉTAPE 2 : Configurer la RAM et la Bande Passante (généralement on les laisse à 100% pour simplifier)
+UtilizationModel ramModel = new UtilizationModelFull(); 
+UtilizationModel bwModel = new UtilizationModelFull();
+
+// ÉTAPE 3 : Créer le Cloudlet en lui passant vos modèles
+Cloudlet cloudlet = new Cloudlet(
+    idCloudlet, 
+    longueurCloudlet, // La longueur totale de la tâche en MI (Million Instructions)
+    nombreCores,      // Nombre de processeurs requis (souvent 1)
+    tailleFichier, 
+    tailleSortie, 
+    cpuModel,         // <-- Votre modèle personnalisé est injecté ici
+    ramModel, 
+    bwModel
+);
+
+// Ensuite, vous ajoutez ce cloudlet à la liste de votre Broker comme d'habitude.
+```
+
+```
+mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.cloudsim.examples.custom.UtilizationModels.TestScenariosCharge"
+```
+
+
+<p align="center">
+<img src="Images/ChargeScenarios.png" alt="Description" />xx
+</p>
+
+#### Tâche 1.1 (Conception de scénarios de charge)
+
