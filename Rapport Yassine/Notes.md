@@ -448,3 +448,31 @@ mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.c
 
 #### Tâche 1.1 (Conception de scénarios de charge)
 
+
+
+
+NonPowerAware – A simulation of a heterogeneous non-power aware data center: all hosts consume maximum power all the time.
+<br>
+
+
+Dvfs – A simulation of a heterogeneous power aware data center that only applied DVFS, but no dynamic optimization of the VM allocation. The adjustment of the hosts' power consumption according to their CPU utilization is happening in the PowerDatacenter class.
+<br>
+
+
+ThrRs – A simulation of a heterogeneous power aware data center that applies the Static Threshold (THR) VM allocation policy and Random Selection (RS) VM selection policy.
+<br>
+
+
+IqrMc – A simulation of a heterogeneous power aware data center that applies the Inter Quartile Range (IQR) VM allocation policy and Maximum Correlation (MC) VM selection policy.
+<br>
+
+
+MadMmt – A simulation of a heterogeneous power aware data center that applies the Median Absolute Deviation (MAD) VM allocation policy and Minimum Migration Time (MMT) VM selection policy.
+<br>
+
+
+LrMu – A simulation of a heterogeneous power aware data center that applies the Local Regression (LR) VM allocation policy and Minimum Utilization (MU) VM selection policy.
+
+
+
+
