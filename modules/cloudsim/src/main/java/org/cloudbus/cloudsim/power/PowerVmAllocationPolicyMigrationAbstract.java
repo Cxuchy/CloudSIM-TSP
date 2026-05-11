@@ -58,7 +58,7 @@ public abstract class PowerVmAllocationPolicyMigrationAbstract extends VmAllocat
          where each key is a host id and each value is the CPU utilization percentage history.*/
     private final List<List<Double>> utilizationHistory = new ArrayList<>();
 
-	/** 
+	/** z
          * The metric history. 
          * //@TODO the map stores different data. Sometimes it stores the upper threshold,
          * other it stores utilization threshold or predicted utilization, that

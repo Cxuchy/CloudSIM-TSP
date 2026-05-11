@@ -134,10 +134,31 @@ public class PowerDatacenter extends Datacenter {
 			}
 
 			// schedules an event to the next time
+			/*
 			if (minTime != Double.MAX_VALUE) {
 				CloudSim.cancelAll(getId(), new PredicateType(CloudActionTags.VM_DATACENTER_EVENT));
 				send(getId(), getSchedulingInterval(), CloudActionTags.VM_DATACENTER_EVENT);
 			}
+			*/
+			//
+
+			if (CloudSim.clock() < 86400) {
+
+				CloudSim.cancelAll(
+						getId(),
+						new PredicateType(
+								CloudActionTags.VM_DATACENTER_EVENT
+						)
+				);
+
+				send(
+						getId(),
+						getSchedulingInterval(),
+						CloudActionTags.VM_DATACENTER_EVENT
+				);
+			}
+
+			//
 
 			setLastProcessTime(currentTime);
 		}

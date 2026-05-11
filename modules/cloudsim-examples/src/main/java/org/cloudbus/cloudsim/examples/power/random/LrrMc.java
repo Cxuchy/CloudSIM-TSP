@@ -31,7 +31,7 @@ public class LrrMc {
 		boolean enableOutput = true;
 		boolean outputToFile = false;
 		String inputFolder = "";
-		String outputFolder = "";
+		String outputFolder = "output";
 		String workload = "random"; // Random workload
 		String vmAllocationPolicy = "lrr"; // Local Regression Robust (LRR) VM allocation policy
 		String vmSelectionPolicy = "mc"; // Maximum Correlation (MC) VM selection policy

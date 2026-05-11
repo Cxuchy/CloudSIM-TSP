@@ -1037,6 +1037,7 @@ __Idée :__ Migrer une petite charge, plutôt qu’une grosse
 Sélection d'une VM choisie aléatoirement.
 ```
 
+## /RANDOM
 
 ### Exemple 1 : NonPowerAware.java
 
@@ -1088,7 +1089,7 @@ __4. La Sortie est plus enrichie__
 javaHelper.printResults(datacenter, vmList, lastClock, ...)
 ```
 
-Affiche énergie consommée + métriques de performance : c'est la nouveauté principale !
+Affiche énergie consommée + métriques de performance : __c'est la nouveauté principale !__
 
 
 #### Scenario : 
@@ -1150,3 +1151,196 @@ Average SLA violation: 0,00%       --> violation moyenne
 __SLA__ (Service Level Agreement) = Engagement de performance envers l'utilisateur. 
 
 __NaN__ (Not a Number) : Pas calculable car les Cloudlets n'ont pas de SLA défini ici.
+
+
+
+
+### Exemple 2 : DVFS.java
+
+Simulation d'un datacenter avec DVFS activé. Ici le serveur réduit sa fréquence CPU (et donc sa consommation) quand la charge est faible.
+
+Ce qui est nouveau par rapport à NonPowerAware est :
+
+```
+String vmAllocationPolicy = "dvfs"; 
+```
+
+Tout le reste (50 VMs, 50 hôtes, mêmes charges) est identique. Au fait, c'est voulu pour comparer uniquement l'impact du DVFS.
+
+
+#### Fonctionnement :
+
+`NonPowerAware` :
+  Hôte à 10% de charge -> consomme quand même 100% de puissance
+
+`DVFS` :
+  Hôte à 10% de charge -> réduit la fréquence CPU
+                       -> consomme proportionnellement moins
+
+#### Execution :
+
+```
+cd ~/Documents/TSP_S2/Cassiopee/CloudSIM-TSP && mvn clean install -DskipTests -q && cd modules/cloudsim-examples && mvn exec:java -Dexec.mainClass="org.cloudbus.cloudsim.examples.power.random.Dvfs" 2>/dev/null | grep -E "Energy|migration|SLA|hosts|VMs|Experiment|simulation time"
+```
+
+#### Sortie :
+
+![Images](./Images/S3_dvfs.png)
+
+
+#### DVFS vs NonPowerAware
+
+![Images](./Images/S3_dvfs_vs_NonPowerAware.png)
+
+
+## Autres exemples dans `power/random/` :
+
+Les autres exemples power/random/ ajoutent des __politiques de migration de VMs par-dessus le DVFS__.
+
+Par exemple : 
+- IqrMc  = DVFS + migration IQR
+- ThrMc  = DVFS + migration seuil
+- (...)
+
+Et ainsi de suite.
+
+
+### Exemple 1 :
+
+DVFS + migration de VMs avec deux politiques combinées :
+
+```
+javavmAllocationPolicy = "iqr";        // détection de surcharge par IQR
+vmSelectionPolicy  = "mc";             // sélection de la VM à migrer par MC
+parameter          = "1.5";            // seuil de sécurité IQR
+```
+
+__Explication__ : 
+
+- `IQR - Inter Quartile Range (allocation)` : 
+Détecte quand un hôte est surchargé en analysant l'historique de sa charge CPU. Si la charge dépasse __médiane + 1.5 × écart interquartile__, alors l'hôte est considéré surchargé et les __migrations déclenchées__.
+
+- `MC - Maximum Correlation (sélection)`
+Quand un hôte est surchargé, choisit quelle VM migrer en sélectionnant celle dont __la charge CPU est la plus corrélée__ avec les autres VMs, pour réduire au maximum la charge de l'hôte.
+
+> __NB__ : Les migrations consolident les VMs sur moins d'hôtes (Effet positif) __Mais__ elles-mêmes ont un coût énergétique.
+
+
+#### Exécution :
+
+```
+cd ~/Documents/TSP_S2/Cassiopee/CloudSIM-TSP && mvn clean install -DskipTests -q && cd modules/cloudsim-examples && mvn exec:java -Dexec.mainClass="org.cloudbus.cloudsim.examples.power.random.IqrMc" 2>/dev/null | grep -E "Energy|migration|SLA|hosts|VMs|Experiment|simulation time"
+```
+
+#### Sortie :
+
+![Images](./Images/S3_IqrMc.png)
+
+
+#### Observation surprenante - 0 migrations et Surconsommation !
+
+> __`IqrMc` est censé faire des migrations mais on obtient 0 migrations. Pourquoi ?__
+
+__Hypothèse :__
+La simulation dure seulement 600 sec Et IQR analyse l'HISTORIQUE de charge CPU pour détecter une surcharge.
+
+__Il y'aurait donc pas assez d'historique pour déclencher une migration.__
+
+C'est une limitation de notre scénario random avec la durée courte. Les migrations apparaîtront __peut être__ dans les scénarios planetlab qui ont de vraies traces de charge sur 24 heures.
+
+
+> __Pourquoi IqrMc consomme PLUS que DVFS ?__
+DVFS  -> 0,17 kWh  : adapte la fréquence directement
+IqrMc -> 0,38 kWh  : DVFS + overhead de calcul IQR sans bénéfice des migrations
+
+Sans migrations effectives, IqrMc __ajouterait__ du calcul sans consolidation. Donc, plus d'énergie que DVFS seul.
+
+
+
+## /PLANETLAB :
+
+### NonPowerAware.java
+
+Une seule différence majeure avec celui dans `/random` est __la source de charge__. En effet :
+
+- `random/`  :  charge aléatoire synthétique
+```
+List<Cloudlet> cloudletList = RandomHelper.createCloudletList(...)
+```
+
+- `planetlab/` : vraies traces de charge réelles (réseau mondial de serveurs universitaires réels)
+```
+String inputFolder = ".../workload/planetlab/20110303"
+List<Cloudlet> cloudletList = PlanetLabHelper.createCloudletListPlanetLab(brokerId, inputFolder)
+```
+
+A savoir : 
+    - 20110303  = traces du 3 mars 2011
+    - La charge CPU réelle est mesurée toutes les 5 minutes sur 24 heures.
+
+#### Execution :
+
+![Images](./Images/S3_NonPowerAware_PlanetLab.png)
+
+
+__Remarqes__ : Aucune migration, malgré la variance des paramètres.
+
+### Synthese de planetLab
+
+![Images](./Images/S3_synthese_planetlabs.png)
+
+
+#### Interprétation : 
+
+Sans __migrations effectives__, toutes ces politiques font exactement la même chose :
+
+- DVFS seul          -> adapte la fréquence        -> 3,2 kWh
+- IQR/LR/MAD/THR + X -> DVFS + overhead de calcul  -> 5,8 kWh
+
+> X = On migre qui ?
+
+L'overhead de calcul est quasi identique pour toutes, ce qui conduit au même résultat.
+
+#### Conclusion : 
+
+Dans notre simulation, le __DVFS seul__ est la politique la plus efficace car les migrations ne se déclenchent pas. Mais dans un vrai datacenter avec des charges plus variables, les migrations permettraient de consolider les VMs et d'éteindre des serveurs, l'énergie devrait donc être encore plus basse.
+
+
+
+### Synthese de random
+
+- 50 VM
+- 15 hotes
+
+![Images](./Images/S3_CloudSim_Comparaison_Politiques_random.png)
+
+
+
+### Remarque importante — Limitation CloudSim 7G
+
+Par défaut, CloudSim 7G arrête la simulation prématurément (~600 sec au lieu 
+de 86 400 sec) car le `CloudletSchedulerDynamicWorkload` calcule une demande 
+de 0 MIPS quand la charge CPU d'une trace est nulle :
+
+```
+double totalMips = getTotalUtilizationOfCpu(getPreviousTime()) * getTotalMips();
+// → si utilisation = 0% → totalMips = 0 → VM inactive → hôte éteint → simulation terminée
+```
+
+**Correction appliquée** dans :
+`modules/cloudsim/src/main/java/org/cloudbus/cloudsim/CloudletSchedulerDynamicWorkload.java`
+
+__Remplacer :__
+```
+double totalMips = getTotalUtilizationOfCpu(getPreviousTime()) * getTotalMips();
+```
+
+__Par :__
+```
+double totalMips = Math.max(getTotalUtilizationOfCpu(getPreviousTime()) * getTotalMips(), 1.0);
+```
+
+Ceci force un minimum de 1 MIPS. Donc, les VMs restent actives toute la simulation.
+
+#### __Note :__ 
+Cette correction ne s'applique pas à NonPowerAware qui utilise `PowerDatacenterNonPowerAware`, sa simulation reste donc limitée à 600 sec.

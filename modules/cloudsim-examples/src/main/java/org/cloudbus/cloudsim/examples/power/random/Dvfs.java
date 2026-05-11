@@ -32,7 +32,7 @@ public class Dvfs {
 		boolean enableOutput = true;
 		boolean outputToFile = false;
 		String inputFolder = "";
-		String outputFolder = "";
+		String outputFolder = "output";
 		String workload = "random"; // Random workload
 		String vmAllocationPolicy = "dvfs"; // DVFS policy without VM migrations
 		String vmSelectionPolicy = "";

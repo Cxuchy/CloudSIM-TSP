@@ -31,7 +31,7 @@ public class LrRs {
 		boolean enableOutput = true;
 		boolean outputToFile = false;
 		String inputFolder = "";
-		String outputFolder = "";
+		String outputFolder = "output";
 		String workload = "random"; // Random workload
 		String vmAllocationPolicy = "lr"; // Local Regression (LR) VM allocation policy
 		String vmSelectionPolicy = "rs"; // Random Selection (RS) VM selection policy

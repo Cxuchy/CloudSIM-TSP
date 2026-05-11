@@ -31,7 +31,7 @@ public class IqrRs {
 		boolean enableOutput = true;
 		boolean outputToFile = false;
 		String inputFolder = "";
-		String outputFolder = "";
+		String outputFolder = "output";
 		String workload = "random"; // Random workload
 		String vmAllocationPolicy = "iqr"; // Inter Quartile Range (IQR) VM allocation policy
 		String vmSelectionPolicy = "rs"; // Random Selection (RS) VM selection policy
