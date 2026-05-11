@@ -381,19 +381,9 @@ Le DVFS (Dynamic Voltage and Frequency Scaling) est une technique de gestion de 
 </p>
 ---
 
-## VM Placement Policies
-
-<!-- Image placeholder -->
-
----
-
-## VM Migration
-
-<!-- Image placeholder -->
 
 
 ## Politique de gestion dynamique des ressources 
-### Phase 1: Lay the Groundwork (Scenarios & Metrics) Before you touch any of the policies in the table, you need a standardized way to test them and measure the results.
 #### Tâche 1.1 (Conception de scénarios de charge)
 
 Dans CloudSim, la charge de travail d'une application 
@@ -425,8 +415,8 @@ UtilizationModel bwModel = new UtilizationModelFull();
 // ÉTAPE 3 : Créer le Cloudlet en lui passant vos modèles
 Cloudlet cloudlet = new Cloudlet(
     idCloudlet, 
-    longueurCloudlet, // La longueur totale de la tâche en MI (Million Instructions)
-    nombreCores,      // Nombre de processeurs requis (souvent 1)
+    longueurCloudlet, 
+    nombreCores,     
     tailleFichier, 
     tailleSortie, 
     cpuModel,         // <-- Votre modèle personnalisé est injecté ici
@@ -446,32 +436,18 @@ mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.c
 <img src="Images/ChargeScenarios.png" alt="Description" />xx
 </p>
 
-#### Tâche 1.1 (Conception de scénarios de charge)
+
+
+Pour bien comprendre le comportement du DVFS on va utiliser une simple topologie pour tester les differents simulateur PowerModel (Full,Static,Cubic,Burst)
 
 
 
 
-NonPowerAware – A simulation of a heterogeneous non-power aware data center: all hosts consume maximum power all the time.
-<br>
 
 
-Dvfs – A simulation of a heterogeneous power aware data center that only applied DVFS, but no dynamic optimization of the VM allocation. The adjustment of the hosts' power consumption according to their CPU utilization is happening in the PowerDatacenter class.
-<br>
 
 
-ThrRs – A simulation of a heterogeneous power aware data center that applies the Static Threshold (THR) VM allocation policy and Random Selection (RS) VM selection policy.
-<br>
 
-
-IqrMc – A simulation of a heterogeneous power aware data center that applies the Inter Quartile Range (IQR) VM allocation policy and Maximum Correlation (MC) VM selection policy.
-<br>
-
-
-MadMmt – A simulation of a heterogeneous power aware data center that applies the Median Absolute Deviation (MAD) VM allocation policy and Minimum Migration Time (MMT) VM selection policy.
-<br>
-
-
-LrMu – A simulation of a heterogeneous power aware data center that applies the Local Regression (LR) VM allocation policy and Minimum Utilization (MU) VM selection policy.
 
 
 
