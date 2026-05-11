@@ -24,7 +24,7 @@ public class Dvfs_UtilizationModelCyclic {
             UtilizationModelCyclic burstModel = new UtilizationModelCyclic(0.1, 0.9, 100);
 
             // 3. Generate Timeline Data for Graphing
-            System.out.println("========== DVFS BURST SCENARIO TIMELINE ==========");
+            System.out.println("========== DVFS CYCLIC SCENARIO TIMELINE ==========");
             System.out.println("Time(s), CPU_Load(%), Power(W)");
 
             // Simulate 250 seconds of time passing, sampling every 10 seconds

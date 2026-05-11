@@ -443,12 +443,54 @@ Pour bien comprendre le comportement du DVFS on va utiliser une simple topologie
 
 
 
+### Charge 1 : UtilizationModelFull()
+
+```
+mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.cloudsim.examples.custom.Dvfs.Dvfs_UtilizationModelFull"
+```
+en output , on peut voir : 
+<p align="center">
+<img src="Images/dvfs1.png" alt="Description" />
+</p>
 
 
+### Charge 2 : UtilizationModelStatic(50%)
+
+```
+mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.cloudsim.examples.custom.Dvfs.Dvfs_UtilizationModelStatic"
+```
+en output , on peut voir :
+<p align="center">
+<img src="Images/dvfs2.png" alt="Description" />
+</p>
+
+avec une charge CPU assez faible , on remarque que la consommation d'energie est tombée de 250 watts pour les deux modeles Cubique / Lineare a 187 watt et 140 watts
+
+### Charge 3 : UtilizationModelCyclic() entre 10% et 90% pour un T=100
+```
+mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.cloudsim.examples.custom.Dvfs.Dvfs_UtilizationModelCyclic"
+```
+<p align="center">
+<img src="Images/cyclic.png" alt="Description" />
+</p>
+
+### Charge 4 : UtilizationModelBurst() minimum de 20% et maximum de 100%
+```
+mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.cloudsim.examples.custom.Dvfs.Dvfs_UtilizationModelBurst"
+```
+<p align="center">
+<img src="Images/burst.png" alt="Description" />
+</p>
 
 
+## Placement des VM 
+Les 3 algorithmes de Placement :  
 
+### FirstFit (Premier Ajustement) : 
+Place la VM sur le premier hôte disposant de suffisamment de ressources.
 
+### BestFit (Meilleur Ajustement) :
+Place la VM sur l'hôte qui a le moins de ressources libres tout en pouvant l'accueillir (pour optimiser le remplissage).
 
-
-
+### Random (Aléatoire) : 
+Place la VM sur un hôte choisi au hasard parmi ceux qui sont éligibles.
