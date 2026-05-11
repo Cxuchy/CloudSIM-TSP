@@ -395,13 +395,42 @@ CloudSim possède déjà des modèles basiques (UtilizationModelFull pour 100% e
 #### 1. Scénario Statique (Charge constante)
 pour fixer une charge spécifique (par exemple 70%), vous devez créer une classe dédiée.
 
+```
+public UtilizationModelStatic(double niveauUtilisation) {
+        this.niveauUtilisation = niveauUtilisation;  // niveau d'utilization stable exemple : pour UtilizationFull = 100 , Pour UtilizationNull = 0
+    }
+```
 
 #### 2. Scénario Cyclique (Cycle Jour/Nuit)
 Pour simuler une charge qui augmente et diminue de manière fluide au fil du temps, la méthode la plus efficace est d'utiliser une fonction mathématique sinusoïdale (Math.sin).
 
+```
+public UtilizationModelCyclic(double min, double max, double periode) {
+        this.minUtilisation = min; // niveau minimum d'utilisation 
+        this.maxUtilisation = max; // niveau max d'utilisation == peak 
+        this.periode = periode; // periode 
+    }
+```
+
 #### 3. Scénario Burst (Pics de charge soudains)
 Ce modèle simule une application qui fonctionne normalement à faible régime, mais qui subit de temps en temps des pics d'activité massifs et soudains.
 
+```
+/**
+     * @param base Charge CPU normale et basse (ex: 0.20)
+     * @param pic La charge CPU pendant le pic (ex: 1.00 pour 100%)
+     * @param intervalle Le temps écoulé entre le début de chaque pic
+     * @param duree Combien de temps dure le pic d'activité
+     */
+    public UtilizationModelBurst(double base, double pic, double intervalle, double duree) {
+        this.chargeDeBase = base;
+        this.chargeEnPic = pic;
+        this.intervallePic = intervalle;
+        this.dureePic = duree;
+    }
+```
+
+#### Configuration du Modele de Charge 
 
 ```
 // ÉTAPE 1 : Choisir et configurer le modèle CPU que vous voulez tester
@@ -419,14 +448,14 @@ Cloudlet cloudlet = new Cloudlet(
     nombreCores,     
     tailleFichier, 
     tailleSortie, 
-    cpuModel,         // <-- Votre modèle personnalisé est injecté ici
+    cpuModel,         // <-- Le modéle configuré déja 
     ramModel, 
     bwModel
 );
 
-// Ensuite, vous ajoutez ce cloudlet à la liste de votre Broker comme d'habitude.
+// ÉTAPE 4 : Ensuite, on ajoute ce cloudlet à la liste de Broker. -> Scénario Normale
 ```
-
+Lancer la simulation des charges avec cette commande : 
 ```
 mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.cloudsim.examples.custom.UtilizationModels.TestScenariosCharge"
 ```
@@ -452,7 +481,7 @@ en output , on peut voir :
 <p align="center">
 <img src="Images/dvfs1.png" alt="Description" />
 </p>
-
+Comportement normal , puisque le modele de charge CPU est en Full() donc DVFS n'intervient pas 
 
 ### Charge 2 : UtilizationModelStatic(50%)
 
