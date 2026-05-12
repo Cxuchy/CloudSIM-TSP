@@ -513,13 +513,106 @@ mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.c
 
 
 ## Placement des VM 
-Les 3 algorithmes de Placement :  
 
-### FirstFit (Premier Ajustement) : 
+Pour tester le comportement de chaque Politique de placement on prepare la meme infra 
+- Un Datacenter composé de 8 Hôtes (NUM_HOSTS).
+
+- Chaque hôte a une capacité fixe de 3000 MIPS (puissance de calcul) et consomme 200W au maximum et possède un profil énergétique linéaire.
+
+On défini une liste de 16 VMs (VM_PROFILES) avec des besoins variés en calcul :
+
+- Certaines demandent 1400 MIPS (grosses VMs).
+
+- D'autres demandent 900 MIPS (moyennes).
+
+- D'autres demandent 400 MIPS (petites).
+
+```
+Note : Le code utilise Collections.shuffle(list), donc l'ordre dans lequel les VMs arrivent pour être placées change à chaque exécution.
+```
+
+<p align="center">
+<img src="Images/PlacementTopo.png" alt="Description" />
+</p>
+
+Les 3 algorithmes de Placement :
+
+### FirstFit (Premier Ajustement) :
 Place la VM sur le premier hôte disposant de suffisamment de ressources.
+
+```
+Politique par défaut proposée par le simulateur
+VmAllocationPolicySimple policy = new VmAllocationPolicySimple(hostList)
+```
+Pour tester : 
+```
+mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.cloudsim.examples.custom.VM_Placement_Policies.FirstFit" 
+```
+<p align="center">
+<img src="Images/FirstFit1.png" alt="Description" />
+</p>
+
+<p align="center">
+<img src="Images/FirstFit2.png" alt="Description" />
+</p>
 
 ### BestFit (Meilleur Ajustement) :
 Place la VM sur l'hôte qui a le moins de ressources libres tout en pouvant l'accueillir (pour optimiser le remplissage).
 
-### Random (Aléatoire) : 
+La logique est implémentée dans la classe **VmAllocationPolicyBestFit.java** sous Policies
+
+```
+@Override
+    public HostEntity findHostForGuest(GuestEntity guest) {
+        HostEntity bestHost     = null;
+        double     minRemaining = Double.MAX_VALUE;
+
+        for (HostEntity host : getHostList()) {
+            // Skip hosts that cannot accommodate this guest
+            if (!host.isSuitableForGuest(guest)) continue;
+
+            double remaining = host.getTotalMips();
+
+            // Best Fit: choose the host with the smallest remaining capacity
+            // that is still large enough to host the VM
+            if (remaining < minRemaining) {
+                minRemaining = remaining;
+                bestHost     = host;
+            }
+        }
+
+        return bestHost; // null = no suitable host found (CloudSim handles this)
+    }
+```
+Pour tester : 
+```
+mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.cloudsim.examples.custom.VM_Placement_Policies.BestFit"
+```
+<p align="center">
+<img src="Images/BestFit1.png" alt="Description" />
+</p>
+
+<p align="center">
+<img src="Images/BestFit2.png" alt="Description" />
+</p>
+
+### Random (Aléatoire) :
 Place la VM sur un hôte choisi au hasard parmi ceux qui sont éligibles.
+
+La logique est implémentée dans la classe **VmAllocationPolicyRandomFit.java** sous Policies
+```
+ // Pick a random host from the list of suitable hosts
+        int randomIndex = (int) (Math.random() * suitableHosts.size());
+        return suitableHosts.get(randomIndex);
+```
+Pour tester : 
+```
+mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.cloudsim.examples.custom.VM_Placement_Policies.RandomFit"
+```
+<p align="center">
+<img src="Images/RandomFit1.png" alt="Description" />
+</p>
+
+<p align="center">
+<img src="Images/RandomFit2.png" alt="Description" />
+</p>
