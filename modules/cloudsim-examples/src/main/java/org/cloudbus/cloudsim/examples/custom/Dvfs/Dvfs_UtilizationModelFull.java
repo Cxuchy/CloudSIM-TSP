@@ -26,6 +26,7 @@ public class Dvfs_UtilizationModelFull {
             // Initialize CloudSim core [cite: 16, 17]
             CloudSim.init(1, Calendar.getInstance(), false);
 
+            String vmAllocationPolicy = "dvfs";
             // 1. Create Hosts representing different DVFS Scaling states
             List<Host> hostList = new ArrayList<>();
 

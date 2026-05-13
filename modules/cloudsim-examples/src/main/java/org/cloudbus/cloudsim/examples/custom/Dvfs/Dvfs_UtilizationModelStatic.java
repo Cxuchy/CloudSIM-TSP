@@ -20,6 +20,7 @@ public class Dvfs_UtilizationModelStatic {
         try {
             CloudSim.init(1, Calendar.getInstance(), false);
 
+            String vmAllocationPolicy = "dvfs";
             List<Host> hostList = new ArrayList<>();
             // Host capacity: 1000 MIPS, 4096 RAM
             hostList.add(createPowerHost(0, 1000, 4096, new PowerModelLinear(250, 0.5)));

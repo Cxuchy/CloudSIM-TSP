@@ -462,7 +462,7 @@ mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.c
 
 
 <p align="center">
-<img src="Images/ChargeScenarios.png" alt="Description" />xx
+<img src="Images/ChargeScenarios.png" alt="Description" />Modeles de puissance pour mesurer le DVFS
 </p>
 
 
@@ -503,6 +503,14 @@ mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.c
 <img src="Images/cyclic.png" alt="Description" />
 </p>
 
+
+<p align="center">
+<img src="Images/cyclic2.png" alt="Description" />
+</p>
+Note : 
+
+Au pic (100%), l'économie est 0W — les deux modèles atteignent la même puissance maximale. Le DVFS n'apporte un gain que quand la charge est juste en dessous du maximum.
+
 ### Charge 4 : UtilizationModelBurst() minimum de 20% et maximum de 100%
 ```
 mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.cloudsim.examples.custom.Dvfs.Dvfs_UtilizationModelBurst"
@@ -511,6 +519,19 @@ mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.c
 <img src="Images/burst.png" alt="Description" />
 </p>
 
+```
+UtilizationModelBurst(0.20, 1.00, 100, 30) → pic de 30s toutes les 100s :
+
+t=0  à t=29  → 100% (pic)      ← burst actif
+t=30 à t=99  → 20%  (base)     ← retour au calme == Abaisser la fréquence pendant les périodes de faible charge de travail
+t=100 à t=129→ 100% (pic)      ← nouveau burst
+t=130 à t=199→ 20%  (base)
+...
+```
+
+***Conclusion :*** 
+
+Avec ce profil burst, le DVFS économise ~16.8W en continu par serveur — uniquement grâce aux 70% du temps passés en base load.
 
 ## Placement des VM 
 
@@ -616,3 +637,7 @@ mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.c
 <p align="center">
 <img src="Images/RandomFit2.png" alt="Description" />
 </p>
+
+
+
+### VmAllocationPolicyMigration
