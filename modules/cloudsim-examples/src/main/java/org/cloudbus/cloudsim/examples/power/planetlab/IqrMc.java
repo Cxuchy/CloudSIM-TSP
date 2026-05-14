@@ -34,12 +34,6 @@ public class IqrMc {
 		boolean outputToFile = false;
 		String inputFolder = IqrMc.class.getClassLoader().getResource("workload/planetlab").getPath();
 
-
-		// Fix for Windows: remove leading slash before drive letter
-		if (inputFolder.startsWith("/") && inputFolder.contains(":")) {
-			inputFolder = inputFolder.substring(1);
-		}
-
 		System.out.println("Workload path: " + inputFolder); // ADD THIS
 		String outputFolder = "output";
 		String workload = "20110303"; // PlanetLab workload
