@@ -54,6 +54,8 @@ public class FirstFit {
 
             List<PowerHost> hostList = createHosts();
 
+
+            String vmAllocationPolicy = "dvfs";
             // using the allocation Policy Simple --> First Fit
             VmAllocationPolicySimple policy = new VmAllocationPolicySimple(hostList) {
                 @Override

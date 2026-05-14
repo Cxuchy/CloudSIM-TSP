@@ -55,6 +55,8 @@ public class RandomFit {
 
             List<PowerHost> hostList = createHosts();
 
+            String vmAllocationPolicy = "dvfs";
+
             VmAllocationPolicyRandomFit policy = new VmAllocationPolicyRandomFit(hostList) {
                 @Override
                 public boolean allocateHostForGuest(GuestEntity guest) {

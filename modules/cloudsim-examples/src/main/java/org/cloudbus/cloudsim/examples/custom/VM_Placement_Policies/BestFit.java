@@ -56,6 +56,8 @@ public class BestFit {
 
             List<PowerHost> hostList = createHosts();
 
+            String vmAllocationPolicy = "dvfs";
+
             // Use BestFit policy directly — it implements findHostForGuest()
             // Subclass only to intercept the snapshot; no anonymous class needed
             VmAllocationPolicyBestFit policy = new VmAllocationPolicyBestFit(hostList) {

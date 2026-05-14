@@ -495,6 +495,7 @@ en output , on peut voir :
 
 avec une charge CPU assez faible , on remarque que la consommation d'energie est tombée de 250 watts pour les deux modeles Cubique / Lineare a 187 watt et 140 watts
 
+DVFS va donc abaisser la fréquence pendant les périodes de faible charge de travail.
 ### Charge 3 : UtilizationModelCyclic() entre 10% et 90% pour un T=100
 ```
 mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.cloudsim.examples.custom.Dvfs.Dvfs_UtilizationModelCyclic"
@@ -536,17 +537,17 @@ Avec ce profil burst, le DVFS économise ~16.8W en continu par serveur — uniqu
 ## Placement des VM 
 
 Pour tester le comportement de chaque Politique de placement on prepare la meme infra 
-- Un Datacenter composé de 8 Hôtes (NUM_HOSTS).
+- Un Datacenter composé de 8 Hôtes **NUM_HOSTS=8**.
 
-- Chaque hôte a une capacité fixe de 3000 MIPS (puissance de calcul) et consomme 200W au maximum et possède un profil énergétique linéaire.
+- Chaque hôte a une capacité fixe de **3000 MIPS** (puissance de calcul) et consomme **200W** au maximum et possède un profil énergétique linéaire.
 
-On défini une liste de 16 VMs (VM_PROFILES) avec des besoins variés en calcul :
+On défini une liste de 16 VMs **VM_PROFILES=H,M,L** avec des besoins variés en calcul :
 
-- Certaines demandent 1400 MIPS (grosses VMs).
+- Certaines demandent 1400 MIPS (grosses VMs). x 4
 
-- D'autres demandent 900 MIPS (moyennes).
+- D'autres demandent 900 MIPS (moyennes). x 6
 
-- D'autres demandent 400 MIPS (petites).
+- D'autres demandent 400 MIPS (petites). x 6
 
 ```
 Note : Le code utilise Collections.shuffle(list), donc l'ordre dans lequel les VMs arrivent pour être placées change à chaque exécution.
@@ -555,6 +556,26 @@ Note : Le code utilise Collections.shuffle(list), donc l'ordre dans lequel les V
 <p align="center">
 <img src="Images/PlacementTopo.png" alt="Description" />
 </p>
+
+Creation des VM a partir du **VM_PROFILES**
+```
+{ MIPS, RAM, BW }
+  │      │    └── Bande passante (Mbps)
+  │      └─────── Mémoire RAM (MB)
+  └────────────── Puissance de calcul (Million Instructions Per Second)
+  
+  
+// VM Lourde   : serveur applicatif, base de données
+{1400, 2048, 1000}   // 1400 MIPS, 2 Go RAM, 1000 Mbps
+
+// VM Légère   : microservice, conteneur simple
+{ 400,  512,  200}   // 400 MIPS,  512 Mo RAM, 200 Mbps
+
+// VM Moyenne  : serveur web, cache
+{ 900, 1024,  500}   // 900 MIPS,  1 Go RAM,  500 Mbps
+
+```
+
 
 Les 3 algorithmes de Placement :
 
@@ -640,4 +661,8 @@ mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.c
 
 
 
-### VmAllocationPolicyMigration
+### VM Migration : 
+
+
+
+### Vertical / Horizontal Scaling : 
