@@ -347,18 +347,19 @@ Ce modèle suppose que la consommation d'énergie augmente de façon quadratique
 
 Ce modèle accentue encore plus l'efficacité à faible charge, avec une consommation qui augmente de façon cubique.
 
-<!-- Image placeholder -->
 <p align="center">
   <img src="Images/PowerModelCubic_Formula.png" alt="Description" />
 </p>
 
 
-**Utilisation :** Il est souvent utilisé pour modéliser des processeurs équipés de technologies d'économie d'énergie très agressives, comme le DVFS (Dynamic Voltage and Frequency Scaling).
+**Utilisation :** 
 
----
-> **Note :** <p align="center">
->  <img src="Images/notePowerModels.png" alt="Description" />
-></p>
+Il est souvent utilisé pour modéliser des processeurs équipés de technologies d'économie d'énergie très agressives, comme le DVFS (Dynamic Voltage and Frequency Scaling).
+
+------------
+
+**Note :** <p align="center"><img src="Images/notePowerModels.png" alt="Description" />
+
 
 
 <p align="center">
@@ -377,11 +378,8 @@ Ce graphique illustre l'évolution de l'énergie cumulée en **kWh** au cours du
 ## DVFS
 Le DVFS (Dynamic Voltage and Frequency Scaling) est une technique de gestion de l'énergie au niveau matériel. Elle ajuste dynamiquement la tension et la fréquence de fonctionnement d'un processeur en fonction de son utilisation actuelle. Abaisser la fréquence pendant les périodes de faible charge de travail réduit la consommation d'énergie, tandis que l'augmenter pendant les pics de demande garantit que les applications répondent à leurs exigences de performance.
 <p align="center">
-<img src="Images/dvfs.png" alt="Description" />xx
+<img width="" height="150" src="Images/dvfs.png" alt="Description" />
 </p>
----
-
-
 
 ## Politique de gestion dynamique des ressources 
 #### Tâche 1.1 (Conception de scénarios de charge)
@@ -534,6 +532,8 @@ t=130 à t=199→ 20%  (base)
 
 Avec ce profil burst, le DVFS économise ~16.8W en continu par serveur — uniquement grâce aux 70% du temps passés en base load.
 
+----------------------
+
 ## Placement des VM 
 
 Pour tester le comportement de chaque Politique de placement on prepare la meme infra 
@@ -660,9 +660,74 @@ mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.c
 </p>
 
 
-
+----------------------
 ### VM Migration : 
 
+<p align="center">
+<img src="Images/MigrationExamples.png" alt="Description" />
+</p>
+
+----------------------
+### Vertical & Horizontal Scaling : 
+
+#### Horizontal Scaling : 
+que se passe-t-il si on laisse une seule VM absorber toute la charge, versus si on crée dynamiquement de nouvelles VMs pour la répartir ?
+Pour cela on va faire deux test et comparer les Makespan entre un placement Sans HScaling et un autre avec le HScaling
+
+**Architecuture :**
+
+Un datacenter contient un seul hôte physique avec 10 000 MIPS, 8 cœurs et 8 Go de RAM. Sur cet hôte, des VMs sont déployées, chacune disposant de 1 000 MIPS, 1 vCPU et 512 Mo de RAM. La charge de travail est constituée de 12 cloudlets, chacun représentant une tâche applicative de 40 000 MI (Million d'Instructions).
 
 
-### Vertical / Horizontal Scaling : 
+Pour tester : 
+```
+mvn -X -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.cloudsim.examples.custom.Scaling.HorizontalScalingExample"
+```
+
+
+**Scénario A — Sans Horizontal Scaling (baseline)**
+
+Les 12 cloudlets sont soumis à une seule VM. Cette VM doit les exécuter séquentiellement avec son scheduleur TimeShared. Elle devient le goulot d'étranglement : son CPU est saturé, le temps d'exécution total (makespan) est maximal, et le temps moyen par cloudlet est élevé. C'est ce qui se passe dans un environnement sans politique d'élasticité.
+
+<p align="center">
+<img src="Images/h1.0.png" alt="Description" />
+</p>
+
+<p align="center">
+<img src="Images/h1.2.png" alt="Description" />
+</p>
+
+**Scénario B — Avec Horizontal Scaling**
+
+Un seuil de charge est défini à 80% du CPU et une capacité maximale de 3 cloudlets par VM. Lorsque la simulation détecte que la charge totale dépasse ce seuil sur la VM initiale, elle calcule le nombre de VMs nécessaires :
+
+**VMs nécessaires = ceil(12 cloudlets / 3 max par VM) = 4 VMs**
+
+3 nouvelles VMs sont créées dynamiquement par le broker (VM #1, #2, #3) en plus de la VM initiale. Les 12 cloudlets sont ensuite distribués en round-robin : chaque VM reçoit exactement 3 cloudlets et les exécute en parallèle.
+
+
+<p align="center">
+<img src="Images/h2.0.png" alt="Description" />
+</p>
+
+<p align="center">
+<img src="Images/h2.1.png" alt="Description" />
+</p>
+
+
+FINISH NOT FINISHED 
+
+
+
+#### Vertical Scaling : 
+C'est quoi le Vertical Scaling ? : 
+
+Le vertical scaling consiste à augmenter les ressources d’une machine virtuelle (VM) déjà existante — comme le CPU (MIPS), le nombre de vCPU et la RAM — afin d’améliorer les performances sans créer de nouvelles machines virtuelles.
+
+
+Pour tester : 
+
+```
+mvn -X -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.cloudsim.examples.custom.Scaling.VerticalScalingExample"
+```
+
