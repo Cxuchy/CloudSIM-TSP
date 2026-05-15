@@ -674,9 +674,12 @@ mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.c
 que se passe-t-il si on laisse une seule VM absorber toute la charge, versus si on crée dynamiquement de nouvelles VMs pour la répartir ?
 Pour cela on va faire deux test et comparer les Makespan entre un placement Sans HScaling et un autre avec le HScaling
 
-**Architecuture :**
-
+**Architecture :**
 Un datacenter contient un seul hôte physique avec 10 000 MIPS, 8 cœurs et 8 Go de RAM. Sur cet hôte, des VMs sont déployées, chacune disposant de 1 000 MIPS, 1 vCPU et 512 Mo de RAM. La charge de travail est constituée de 12 cloudlets, chacun représentant une tâche applicative de 40 000 MI (Million d'Instructions).
+
+<p align="center">
+<img src="Images/hscaling.png" alt="Description" />
+</p>
 
 
 Pour tester : 
@@ -687,7 +690,10 @@ mvn -X -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbu
 
 **Scénario A — Sans Horizontal Scaling (baseline)**
 
-Les 12 cloudlets sont soumis à une seule VM. Cette VM doit les exécuter séquentiellement avec son scheduleur TimeShared. Elle devient le goulot d'étranglement : son CPU est saturé, le temps d'exécution total (makespan) est maximal, et le temps moyen par cloudlet est élevé. C'est ce qui se passe dans un environnement sans politique d'élasticité.
+Les 12 cloudlets sont soumis à une seule VM. Cette VM doit les exécuter séquentiellement avec son scheduleur TimeShared.
+
+**Problème :** 
+son CPU devient saturé, le temps d'exécution total (makespan) est maximal, et le temps moyen par cloudlet est élevé.
 
 <p align="center">
 <img src="Images/h1.0.png" alt="Description" />
@@ -701,10 +707,20 @@ Les 12 cloudlets sont soumis à une seule VM. Cette VM doit les exécuter séque
 
 Un seuil de charge est défini à 80% du CPU et une capacité maximale de 3 cloudlets par VM. Lorsque la simulation détecte que la charge totale dépasse ce seuil sur la VM initiale, elle calcule le nombre de VMs nécessaires :
 
-**VMs nécessaires = ceil(12 cloudlets / 3 max par VM) = 4 VMs**
+```
+VMs nécessaires = ceil(12 cloudlets / 3 max par VM) = 4 VMs
+```
 
 3 nouvelles VMs sont créées dynamiquement par le broker (VM #1, #2, #3) en plus de la VM initiale. Les 12 cloudlets sont ensuite distribués en round-robin : chaque VM reçoit exactement 3 cloudlets et les exécute en parallèle.
 
+```
+Hôte physique : un seul Hote H1
+│
+├── VM #0  ← existante - point de départ
+├── VM #1  ← créée dynamiquement par le scaling -> Quand la VM #0 est surchargée (CPU > 80%)
+├── VM #2  ← créée dynamiquement par le scaling
+└── VM #3  ← créée dynamiquement par le scaling
+```
 
 <p align="center">
 <img src="Images/h2.0.png" alt="Description" />
@@ -715,19 +731,13 @@ Un seuil de charge est défini à 80% du CPU et une capacité maximale de 3 clou
 </p>
 
 
-FINISH NOT FINISHED 
-
-
 
 #### Vertical Scaling : 
-C'est quoi le Vertical Scaling ? : 
-
-Le vertical scaling consiste à augmenter les ressources d’une machine virtuelle (VM) déjà existante — comme le CPU (MIPS), le nombre de vCPU et la RAM — afin d’améliorer les performances sans créer de nouvelles machines virtuelles.
-
-
+augmenter les ressources d’une VM déjà existante comme le CPU (MIPS), le nombre de vCPU et la RAM afin d’améliorer les performances sans créer de nouvelles VMs.
 Pour tester : 
 
 ```
 mvn -X -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.cloudsim.examples.custom.Scaling.VerticalScalingExample"
 ```
+
 
