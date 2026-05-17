@@ -657,6 +657,16 @@ mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.c
 
 <p align="center">
 <img src="Images/RandomFit2.png" alt="Description" />
+</p>  
+
+### RoundRobin (existe sous CloudSim Plus) :
+
+<p align="center">
+<img src="Images/RoundRobin1.png" alt="Description" />
+</p>
+
+<p align="center">
+<img src="Images/RoundRobin2.png" alt="Description" />
 </p>
 
 
