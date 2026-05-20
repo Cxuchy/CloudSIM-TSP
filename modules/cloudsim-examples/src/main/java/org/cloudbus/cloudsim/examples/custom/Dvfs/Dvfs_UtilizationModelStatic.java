@@ -32,9 +32,7 @@ public class Dvfs_UtilizationModelStatic {
             List<Vm> vmlist = new ArrayList<>();
             List<Cloudlet> cloudletList = new ArrayList<>();
 
-            // THE TRICK:
-            // VM RAM = 4096 (Forces 1 VM per Host)
-            // VM MIPS = 500 (Forces exactly 50% CPU load since Host has 1000 MIPS)
+
             for (int i = 0; i < 2; i++) {
                 Vm vm = new Vm(i, broker.getId(), 500, 1, 4096, 1000, 10000, "Xen", new CloudletSchedulerTimeShared());
                 vmlist.add(vm);
@@ -52,11 +50,10 @@ public class Dvfs_UtilizationModelStatic {
             CloudSim.startSimulation();
             CloudSim.stopSimulation();
 
-            // 5. Results Analysis
+            //Results Analysis
             System.out.println("\n========== DVFS ANALYSIS RESULTS ==========");
             System.out.println("Condition: 1 VM per Host, exactly 50% CPU load.\n");
 
-            // We pass the known 0.50 utilization to bypass the stopSimulation() clock reset
             analyzeHost((PowerHost) hostList.get(0), "Linear Scaling", 0.50);
             analyzeHost((PowerHost) hostList.get(1), "Cubic (DVFS) Scaling", 0.50);
 

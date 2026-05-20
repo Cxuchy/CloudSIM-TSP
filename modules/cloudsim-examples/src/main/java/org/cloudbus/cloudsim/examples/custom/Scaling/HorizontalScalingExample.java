@@ -67,22 +67,22 @@ public class HorizontalScalingExample {
                 (scalingEnabled ? "AVEC Horizontal Scaling" : "SANS Horizontal Scaling (baseline)"));
 
         try {
-            // 1. Initialiser CloudSim
+            //Initialiser CloudSim
             int numUsers = 1;
             Calendar calendar = Calendar.getInstance();
             CloudSim.init(numUsers, calendar, false);
 
-            // 2. Créer le datacenter
+            //Créer le datacenter
             Datacenter datacenter = createDatacenter("Datacenter_0");
 
-            // 3. Créer le broker
+            //Créer le broker
             DatacenterBroker broker = new DatacenterBroker("Broker");
             int brokerId = broker.getId();
 
-            // 4. Créer les cloudlets
+            //Créer les cloudlets
             cloudletList = createCloudlets(brokerId);
 
-            // 5. Créer les VMs (avec ou sans scaling)
+            //Créer les VMs (avec ou sans scaling)
             vmList = new ArrayList<>();
 
             if (!scalingEnabled) {
@@ -129,11 +129,11 @@ public class HorizontalScalingExample {
 
             broker.submitCloudletList(cloudletList);
 
-            // 6. Lancer la simulation
+            // Lancer la simulation
             CloudSim.startSimulation();
             CloudSim.stopSimulation();
 
-            // 7. Récupérer et afficher les résultats
+            // afficher les résultats
             List<Cloudlet> results = broker.getCloudletReceivedList();
             printResults(results, scalingEnabled);
 

@@ -670,12 +670,23 @@ mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.c
 </p>
 
 
+
+
+
 ----------------------
 ### VM Migration : 
 
 <p align="center">
 <img src="Images/MigrationExamples.png" alt="Description" />
 </p>
+
+
+#### Notes :
+
+String **vmAllocationPolicy** = "Iqr" | "Lrr" | "Mad" | "Thr";
+
+
+String **vmSelectionPolicy** = "Mc" | "Mmt" | "Mu" | "Rs" ;
 
 ----------------------
 ### Vertical & Horizontal Scaling : 
@@ -744,10 +755,59 @@ Hôte physique : un seul Hote H1
 
 #### Vertical Scaling : 
 augmenter les ressources d’une VM déjà existante comme le CPU (MIPS), le nombre de vCPU et la RAM afin d’améliorer les performances sans créer de nouvelles VMs.
+
+
+Les différents paramètres de Vertical Scaling dans CloudSim
+-  **MIPS** 
+
+```
+// Faible puissance → Haute puissance
+Vm vmBefore = new Vm(id, brokerId, 500,  1, 512, bw, storage, vmm, scheduler);
+Vm vmAfter  = new Vm(id, brokerId, 2000, 1, 512, bw, storage, vmm, scheduler);
+//                                 ^^^^
+//                            MIPS x4 → cloudlets finissent 4x plus vite
+```
+- **vCPUs**
+
+```
+Vm vmBefore = new Vm(id, brokerId, 500, 1, 512, bw, storage, vmm, scheduler);
+Vm vmAfter  = new Vm(id, brokerId, 500, 4, 512, bw, storage, vmm, scheduler);
+//                                      ^
+//                                 vCPUs x4 → 4 cloudlets en parallèle
+```
+**Impact direct :** Avec CloudletSchedulerTimeShared, plus de vCPUs = plus de cloudlets exécutés simultanément. Avec CloudletSchedulerSpaceShared, chaque cloudlet occupe un PE entier.
+
+
+-  **RAM**
+
+```
+Vm vmBefore = new Vm(id, brokerId, 500, 1, 512,  bw, storage, vmm, scheduler);
+Vm vmAfter  = new Vm(id, brokerId, 500, 1, 2048, bw, storage, vmm, scheduler);
+//                                         ^^^^
+//                                     RAM x4
+```
+
 Pour tester : 
 
 ```
 mvn -X -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.cloudsim.examples.custom.Scaling.VerticalScalingExample"
 ```
 
+
+
+
+
+<p align="center">
+<img src="Images/vscaling.png" alt="Description" />
+</p>
+
+
+Résultats : 
+<p align="center">
+<img src="Images/vscaling_results.png" alt="Description" />
+</p>
+
+
+#### vertical scaling example to check  
+#### migration example to check 
 

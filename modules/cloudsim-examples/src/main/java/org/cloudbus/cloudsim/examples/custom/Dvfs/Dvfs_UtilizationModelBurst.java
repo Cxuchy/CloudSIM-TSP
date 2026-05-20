@@ -19,6 +19,8 @@ public class Dvfs_UtilizationModelBurst {
         try {
             CloudSim.init(1, Calendar.getInstance(), false);
 
+            String vmAllocationPolicy = "dvfs";
+
             // Power models : Linear (sans DVFS) vs Cubic (avec DVFS)
             PowerModelLinear pmLinear = new PowerModelLinear(250, 0.5);
             PowerModelCubic  pmCubic  = new PowerModelCubic(250, 0.5);

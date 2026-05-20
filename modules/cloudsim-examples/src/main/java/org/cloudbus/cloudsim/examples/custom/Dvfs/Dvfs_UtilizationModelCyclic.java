@@ -18,6 +18,8 @@ public class Dvfs_UtilizationModelCyclic {
             // Initialisation de CloudSim [cite: 16, 17]
             CloudSim.init(1, Calendar.getInstance(), false);
 
+            String vmAllocationPolicy = "dvfs";
+
             // 1. Définition des modèles de puissance [cite: 38]
             // Max Power: 250W, Static/Idle Power: 125W (50%)
             PowerModelLinear pmLinear = new PowerModelLinear(250, 0.5);

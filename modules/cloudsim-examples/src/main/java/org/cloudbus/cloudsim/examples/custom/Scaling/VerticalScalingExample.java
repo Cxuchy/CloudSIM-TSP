@@ -1,247 +1,306 @@
 package org.cloudbus.cloudsim.examples.custom.Scaling;
 
-import org.cloudbus.cloudsim.core.CloudSim;
-
-
 import org.cloudbus.cloudsim.*;
+import org.cloudbus.cloudsim.core.CloudSim;
+import org.cloudbus.cloudsim.power.models.PowerModelLinear;
 import org.cloudbus.cloudsim.provisioners.*;
+import org.knowm.xchart.*;
+import org.knowm.xchart.style.Styler;
+import org.knowm.xchart.style.markers.SeriesMarkers;
 
-import java.text.DecimalFormat;
+import java.awt.*;
+import java.io.IOException;
 import java.util.*;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import org.knowm.xchart.*;
+import org.knowm.xchart.style.Styler;
 
 /**
- * VerticalScalingExample — CloudSim 7G
+ * Vertical Scaling Simulation — CloudSim + XChart
  *
- * Simule le scaling vertical : augmentation des ressources CPU (MIPS)
- * et RAM d'une VM existante pour absorber une charge croissante,
- * sans créer de nouvelle VM.
+ * Flow:
+ *   Phase 1 (cloudlets 0–5)  : Initial VM  — 500 MIPS, 1 vCPU,  512 MB RAM
+ *   [VM DESTROY + RECREATE]
+ *   Phase 2 (cloudlets 6–11) : Scaled  VM  — 2000 MIPS, 4 vCPUs, 2048 MB RAM
  *
- * Trois scénarios sont comparés :
- *   - SMALL  : VM avec ressources minimales (1000 MIPS, 512 MB)
- *   - MEDIUM : VM après 1er scale-up      (2000 MIPS, 1024 MB)
- *   - LARGE  : VM après 2ème scale-up     (4000 MIPS, 2048 MB)
+ * Power model: linear between idle (100 W) and peak (250 W) for the initial VM,
+ *              linear between idle (150 W) and peak (400 W) for the scaled VM.
+ *   Power(W) = idleWatts + (peakWatts - idleWatts) * cpuUtilisation
+ *   Energy(J) = Power(W) * execTime(s)
  *
- * Les mêmes cloudlets sont exécutés dans chaque scénario.
- * Le temps d'exécution diminue proportionnellement à l'augmentation
- * des MIPS — ce qui démontre l'effet du vertical scaling.
+ * XChart produces a 4-panel PNG saved to vertical_scaling_chart.png.
  */
 public class VerticalScalingExample {
 
-    // ──────────────────────────────────────────────
-    //  Paramètres des cloudlets (identiques dans les 3 scénarios)
-    // ──────────────────────────────────────────────
-    private static final int  NUM_CLOUDLETS         = 6;
-    private static final long CLOUDLET_LENGTH       = 40000; // MI
-    private static final long CLOUDLET_FILESIZE     = 300;
-    private static final long CLOUDLET_OUTPUTSIZE   = 300;
-    private static final int  CLOUDLET_PES          = 1;
+    // ── Simulation constants ──────────────────────────────────────────────────
+    private static final int  TOTAL_CLOUDLETS  = 12;
+    private static final int  CLOUDLETS_PHASE1 = 6;
+    private static final int  VM_ID            = 0;
 
-    // Ressources VM communes
-    private static final long VM_BW   = 1000;
-    private static final long VM_SIZE = 10000;
+    // Initial VM spec
+    private static final int INIT_MIPS  = 500;
+    private static final int INIT_VCPUS = 1;
+    private static final int INIT_RAM   = 512;    // MB
 
-    // Ressources hôte (assez larges pour les 3 scénarios)
-    private static final int  HOST_MIPS    = 20000;
-    private static final int  HOST_PES     = 8;
-    private static final int  HOST_RAM     = 16384; // 16 GB
-    private static final long HOST_BW      = 10000;
-    private static final long HOST_STORAGE = 1000000;
+    // Scaled VM spec
+    private static final int SCALED_MIPS  = 2000;
+    private static final int SCALED_VCPUS = 4;
+    private static final int SCALED_RAM   = 2048; // MB
 
-    // ──────────────────────────────────────────────
-    //  Définition des 3 niveaux de scaling
-    // ──────────────────────────────────────────────
-    private enum ScaleLevel {
-        SMALL  ("SMALL  (baseline)",  1000, 1, 512),
-        MEDIUM ("MEDIUM (scale x2)",  2000, 2, 1024),
-        LARGE  ("LARGE  (scale x4)",  4000, 4, 2048);
+    // Shared VM parameters
+    private static final long   STORAGE = 10_000L;
+    private static final long   BW      = 1_000L;
+    private static final String VMM     = "Xen";
 
-        final String label;
-        final int    mips;
-        final int    pes;
-        final int    ram;
+    // Cloudlet parameters
+    private static final long CLOUDLET_LENGTH      = 40_000L; // MI
+    private static final long CLOUDLET_FILE_SIZE   = 300L;
+    private static final long CLOUDLET_OUTPUT_SIZE = 300L;
 
-        ScaleLevel(String label, int mips, int pes, int ram) {
-            this.label = label;
-            this.mips  = mips;
-            this.pes   = pes;
-            this.ram   = ram;
-        }
-    }
 
-    // Stockage des résultats pour le tableau final
-    private static final Map<ScaleLevel, Double> makespanResults = new LinkedHashMap<>();
-    private static final Map<ScaleLevel, Double> avgTimeResults  = new LinkedHashMap<>();
+    private static final double INIT_IDLE_WATTS  = 100.0;
+    private static final double INIT_PEAK_WATTS  = 250.0;
+    // Scaled VM: quad-core, higher-frequency — larger power envelope
+    private static final double SCALED_IDLE_WATTS = 150.0;
+    private static final double SCALED_PEAK_WATTS = 400.0;
 
+    // ── Shared state ──────────────────────────────────────────────────────────
+    private static List<Cloudlet> phase1Results = new ArrayList<>();
+    private static List<Cloudlet> phase2Results = new ArrayList<>();
+
+    // =========================================================================
     public static void main(String[] args) {
-        System.out.println("=================================================");
-        System.out.println("   VERTICAL SCALING — CloudSim 7G");
-        System.out.println("=================================================\n");
-
-        for (ScaleLevel level : ScaleLevel.values()) {
-            runScenario(level);
-            System.out.println();
-        }
-
-        printComparisonTable();
-    }
-
-    // ──────────────────────────────────────────────
-    //  Lancement d'un scénario
-    // ──────────────────────────────────────────────
-    private static void runScenario(ScaleLevel level) {
-        System.out.println(">>> Scénario : " + level.label);
-        System.out.printf("    Ressources VM : %d MIPS | %d vCPU | %d MB RAM%n",
-                level.mips, level.pes, level.ram);
-
+        System.out.println("╔══════════════════════════════════════════════════╗");
+        System.out.println("║      Vertical Scaling Simulation (CloudSim)      ║");
+        System.out.println("╚══════════════════════════════════════════════════╝\n");
         try {
-            CloudSim.init(1, Calendar.getInstance(), false);
-
-            Datacenter datacenter = createDatacenter("DC_" + level.name());
-            DatacenterBroker broker = new DatacenterBroker("Broker_" + level.name());
-            int brokerId = broker.getId();
-
-            // Créer la VM avec les ressources du niveau courant
-            Vm vm = new Vm(0, brokerId,
-                    level.mips, level.pes, level.ram,
-                    VM_BW, VM_SIZE,
-                    "Xen", new CloudletSchedulerTimeShared());
-
-            List<Vm> vmList = new ArrayList<>();
-            vmList.add(vm);
-            broker.submitGuestList(vmList);
-
-            // Créer les cloudlets
-            List<Cloudlet> cloudletList = createCloudlets(brokerId);
-            for (Cloudlet cl : cloudletList) {
-                cl.setVmId(0);
-            }
-            broker.submitCloudletList(cloudletList);
-
-            // Lancer la simulation
-            CloudSim.startSimulation();
-            CloudSim.stopSimulation();
-
-            // Récupérer résultats
-            List<Cloudlet> results = broker.getCloudletReceivedList();
-            printResults(results, level);
-
+            runSimulation();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    // ──────────────────────────────────────────────
-    //  Affichage des résultats par scénario
-    // ──────────────────────────────────────────────
-    private static void printResults(List<Cloudlet> list, ScaleLevel level) {
-        DecimalFormat df = new DecimalFormat("###.##");
 
-        System.out.println("    ╔══════════╦════════╦══════════╦══════════╦══════════╗");
-        System.out.println("    ║ Cloudlet ║ Status ║ Début(s) ║  Fin(s)  ║ Durée(s) ║");
-        System.out.println("    ╠══════════╬════════╬══════════╬══════════╬══════════╣");
+    private static void runSimulation() throws Exception {
 
-        double totalTime  = 0;
-        double minStart   = Double.MAX_VALUE;
-        double maxFinish  = 0;
+        int numUsers = 1;
+        Calendar calendar = Calendar.getInstance();
+        boolean traceFlag = false;
 
-        for (Cloudlet cl : list) {
-            double start    = cl.getExecStartTime();
-            double finish   = cl.getFinishTime();
-            double duration = finish - start;
-            totalTime += duration;
-            if (start  < minStart)  minStart  = start;
-            if (finish > maxFinish) maxFinish = finish;
+        // ── Phase 1 ───────────────────────────────────────────────────────────
+        printPhaseHeader("PHASE 1 — Initial VM  (cloudlets 0–5)");
 
-            System.out.printf("    ║ %8d ║ %6s ║ %8s ║ %8s ║ %8s ║%n",
-                    cl.getCloudletId(),
-                    cl.getCloudletStatusString().substring(0, 6),
-                    df.format(start),
-                    df.format(finish),
-                    df.format(duration));
-        }
+        CloudSim.init(numUsers, calendar, traceFlag);
+        createDatacenter("Datacenter_Phase1");
 
-        System.out.println("    ╚══════════╩════════╩══════════╩══════════╩══════════╝");
+        DatacenterBroker broker1   = new DatacenterBroker("Broker_Phase1");
+        int              broker1Id = broker1.getId();
 
-        double makespan = maxFinish - minStart;
-        double avgTime  = totalTime / list.size();
+        Vm initialVm = buildVm(VM_ID, broker1Id, INIT_MIPS, INIT_VCPUS, INIT_RAM);
+        printVmSpec("INITIAL VM (before vertical scaling)", initialVm);
 
-        makespanResults.put(level, makespan);
-        avgTimeResults.put(level, avgTime);
+        broker1.submitGuestList(Collections.singletonList(initialVm));
+        broker1.submitCloudletList(createCloudlets(broker1Id, 0, CLOUDLETS_PHASE1));
 
-        System.out.printf("    Makespan total       : %s s%n", df.format(makespan));
-        System.out.printf("    Temps moyen/cloudlet : %s s%n", df.format(avgTime));
+        CloudSim.startSimulation();
+        phase1Results = broker1.getCloudletReceivedList();
+        CloudSim.stopSimulation();
+
+        printCloudletResults("Phase 1 Results  —  Initial VM",
+                phase1Results, INIT_MIPS, INIT_VCPUS,
+                INIT_IDLE_WATTS, INIT_PEAK_WATTS);
+
+        // ── VM destroy / recreate event ────────────────────────────────────
+        System.out.println(">>> [EVENT] Destroying VM #" + VM_ID + " (initial spec)...");
+        System.out.printf ("            MIPS=%.0f  vCPUs=%d  RAM=%d MB%n%n",
+                initialVm.getMips(), initialVm.getNumberOfPes(), initialVm.getRam());
+
+        // ── Phase 2 ───────────────────────────────────────────────────────────
+        printPhaseHeader("PHASE 2 — Scaled VM   (cloudlets 6–11)");
+        System.out.println(">>> [EVENT] Creating vertically scaled VM #" + VM_ID + "...");
+
+        CloudSim.init(numUsers, calendar, traceFlag);
+        createDatacenter("Datacenter_Phase2");
+
+        DatacenterBroker broker2   = new DatacenterBroker("Broker_Phase2");
+        int              broker2Id = broker2.getId();
+
+        Vm scaledVm = buildVm(VM_ID, broker2Id, SCALED_MIPS, SCALED_VCPUS, SCALED_RAM);
+        printVmSpec("SCALED VM (after vertical scaling)", scaledVm);
+        printScalingDelta(initialVm, scaledVm);
+
+        broker2.submitGuestList(Collections.singletonList(scaledVm));
+        broker2.submitCloudletList(createCloudlets(broker2Id, CLOUDLETS_PHASE1, TOTAL_CLOUDLETS));
+
+        CloudSim.startSimulation();
+        phase2Results = broker2.getCloudletReceivedList();
+        CloudSim.stopSimulation();
+
+        printCloudletResults("Phase 2 Results  —  Scaled VM",
+                phase2Results, SCALED_MIPS, SCALED_VCPUS,
+                SCALED_IDLE_WATTS, SCALED_PEAK_WATTS);
+
+        // ── Final summary + chart ─────────────────────────────────────────────
+        printFinalSummary(initialVm, scaledVm, phase1Results, phase2Results);
     }
 
-    // ──────────────────────────────────────────────
-    //  Tableau comparatif final
-    // ──────────────────────────────────────────────
-    private static void printComparisonTable() {
-        DecimalFormat df = new DecimalFormat("###.##");
-
-        System.out.println("=================================================");
-        System.out.println("   TABLEAU COMPARATIF — EFFET DU VERTICAL SCALING");
-        System.out.println("=================================================");
-        System.out.printf("%-26s | %5s | %4s | %6s | %12s | %10s | %8s%n",
-                "Scénario", "MIPS", "PES", "RAM MB",
-                "Makespan(s)", "Moy/CL(s)", "Gain(%)");
-        System.out.println("-".repeat(85));
-
-        double baseMakespan = makespanResults.get(ScaleLevel.SMALL);
-        double baseAvg      = avgTimeResults.get(ScaleLevel.SMALL);
-
-        for (ScaleLevel level : ScaleLevel.values()) {
-            double makespan = makespanResults.get(level);
-            double avg      = avgTimeResults.get(level);
-            double gainMakespan = 100.0 * (baseMakespan - makespan) / baseMakespan;
-            double gainAvg      = 100.0 * (baseAvg - avg)           / baseAvg;
-
-            System.out.printf("%-26s | %5d | %4d | %6d | %12s | %10s | %7s%%%n",
-                    level.label, level.mips, level.pes, level.ram,
-                    df.format(makespan),
-                    df.format(avg),
-                    level == ScaleLevel.SMALL ? "baseline" : "+" + df.format(gainMakespan));
-        }
-
-        System.out.println("\n  → Plus les MIPS augmentent, plus le makespan diminue.");
-        System.out.println("  → Le vertical scaling est efficace pour des tâches CPU-bound.");
-        System.out.println("=================================================");
+    private static double cpuUtilisation(int numVcpus) {
+        return Math.min(1.0, (double) CLOUDLETS_PHASE1 / numVcpus);
     }
 
-    // ──────────────────────────────────────────────
-    //  Factories
-    // ──────────────────────────────────────────────
-    private static List<Cloudlet> createCloudlets(int brokerId) {
+    private static double powerWatts(double util, double idleW, double peakW) {
+        return idleW + util * (peakW - idleW);
+    }
+
+    private static double energyJoules(double execTimeSec,
+                                       double util,
+                                       double idleW, double peakW) {
+        return powerWatts(util, idleW, peakW) * execTimeSec;
+    }
+
+
+    private static Vm buildVm(int vmId, int brokerId,
+                              int mips, int vcpus, int ram) {
+        return new Vm(vmId, brokerId, mips, vcpus, ram,
+                BW, STORAGE, VMM, new CloudletSchedulerTimeShared());
+    }
+
+
+    private static Datacenter createDatacenter(String name) throws Exception {
+        int numPes   = 16;
+        int hostMips = 10_000;
+
+        List<Pe> peList = new ArrayList<>();
+        for (int i = 0; i < numPes; i++) {
+            peList.add(new Pe(i, new PeProvisionerSimple(hostMips)));
+        }
+
+        Host host = new Host(0,
+                new RamProvisionerSimple(16_384),
+                new BwProvisionerSimple(10_000),
+                1_000_000L, peList,
+                new VmSchedulerTimeShared(peList));
+
+        DatacenterCharacteristics chars = new DatacenterCharacteristics(
+                "x86", "Linux", "Xen",
+                Collections.singletonList(host),
+                10.0, 3.0, 0.05, 0.001, 0.1);
+
+        return new Datacenter(name, chars,
+                new VmAllocationPolicySimple(Collections.singletonList(host)),
+                new LinkedList<>(), 0);
+    }
+
+
+    private static List<Cloudlet> createCloudlets(int brokerId, int fromId, int toId) {
         List<Cloudlet> list = new ArrayList<>();
         UtilizationModel um = new UtilizationModelFull();
-        for (int i = 0; i < NUM_CLOUDLETS; i++) {
-            Cloudlet cl = new Cloudlet(i, CLOUDLET_LENGTH, CLOUDLET_PES,
-                    CLOUDLET_FILESIZE, CLOUDLET_OUTPUTSIZE, um, um, um);
-            cl.setUserId(brokerId);
-            list.add(cl);
+        for (int i = fromId; i < toId; i++) {
+            Cloudlet c = new Cloudlet(i, CLOUDLET_LENGTH, 1,
+                    CLOUDLET_FILE_SIZE, CLOUDLET_OUTPUT_SIZE, um, um, um);
+            c.setUserId(brokerId);
+            list.add(c);
         }
         return list;
     }
 
-    private static Datacenter createDatacenter(String name) throws Exception {
-        List<Pe> peList = new ArrayList<>();
-        for (int i = 0; i < HOST_PES; i++) {
-            peList.add(new Pe(i, new PeProvisionerSimple(HOST_MIPS)));
+
+    private static void printPhaseHeader(String text) {
+        System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        System.out.println(" " + text);
+        System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+    }
+
+    private static void printVmSpec(String label, Vm vm) {
+        System.out.printf("  %s%n", label);
+        System.out.printf("    VM ID  : %d%n",      vm.getId());
+        System.out.printf("    MIPS   : %.0f%n",    vm.getMips());
+        System.out.printf("    vCPUs  : %d%n",      vm.getNumberOfPes());
+        System.out.printf("    RAM    : %d MB%n%n",  vm.getRam());
+    }
+
+    private static void printScalingDelta(Vm before, Vm after) {
+        System.out.println("  Resource changes applied by vertical scaling:");
+        System.out.printf("    MIPS   : %4.0f → %4.0f  (×%.1f)%n",
+                before.getMips(),        after.getMips(),
+                after.getMips()        / before.getMips());
+        System.out.printf("    vCPUs  : %4d → %4d  (×%.1f)%n",
+                before.getNumberOfPes(), after.getNumberOfPes(),
+                (double) after.getNumberOfPes() / before.getNumberOfPes());
+        System.out.printf("    RAM    : %4d → %4d MB  (×%.1f)%n%n",
+                before.getRam(), after.getRam(),
+                (double) after.getRam() / before.getRam());
+    }
+
+    private static void printCloudletResults(String title, List<Cloudlet> list,
+                                             int mips, int vcpus,
+                                             double idleW, double peakW) {
+        double util = cpuUtilisation(vcpus);
+        double pw   = powerWatts(util, idleW, peakW);
+
+        String header = String.format("│  %-75s│", title);
+        System.out.println("┌" + "─".repeat(77) + "┐");
+        System.out.println(header);
+        System.out.println("├────────────┬──────────┬────────────┬────────────┬────────────┬────────────┤");
+        System.out.printf("│ %-10s │ %-8s │ %-10s │ %-10s │ %-10s │ %-10s │%n",
+                "Cloudlet", "Status", "Start (s)", "Finish (s)", "CPU Time(s)", "Power (W)");
+        System.out.println("├────────────┼──────────┼────────────┼────────────┼────────────┼────────────┤");
+
+        for (Cloudlet c : list) {
+            if (c.getStatus() == Cloudlet.CloudletStatus.SUCCESS) {
+                System.out.printf("│ %-10d │ %-8s │ %-10.2f │ %-10.2f │ %-10.2f │ %-10.2f │%n",
+                        c.getCloudletId(), "SUCCESS",
+                        c.getExecStartTime(), c.getFinishTime(),
+                        c.getActualCPUTime(), pw);
+            }
         }
+        System.out.println("└────────────┴──────────┴────────────┴────────────┴────────────┴────────────┘");
+        System.out.printf("  VM utilisation: %.1f %%   Instantaneous power: %.2f W%n%n",
+                util * 100, pw);
+    }
 
-        List<Host> hostList = new ArrayList<>();
-        hostList.add(new Host(0,
-                new RamProvisionerSimple(HOST_RAM),
-                new BwProvisionerSimple(HOST_BW),
-                HOST_STORAGE, peList,
-                new VmSchedulerTimeShared(peList)));
+    private static void printFinalSummary(Vm before, Vm after,
+                                          List<Cloudlet> phase1,
+                                          List<Cloudlet> phase2) {
 
-        DatacenterCharacteristics characteristics = new DatacenterCharacteristics(
-                "x86", "Linux", "Xen",
-                hostList, 10.0,
-                3.0, 0.05, 0.001, 0.0);
+        double avgTimeBefore = avgCpuTime(phase1);
+        double avgTimeAfter  = avgCpuTime(phase2);
 
-        return new Datacenter(name, characteristics,
-                new VmAllocationPolicySimple(hostList),
-                new LinkedList<>(), 0);
+        double utilBefore = cpuUtilisation(before.getNumberOfPes());
+        double utilAfter  = cpuUtilisation(after.getNumberOfPes());
+
+        double pwBefore = powerWatts(utilBefore, INIT_IDLE_WATTS,   INIT_PEAK_WATTS);
+        double pwAfter  = powerWatts(utilAfter,  SCALED_IDLE_WATTS, SCALED_PEAK_WATTS);
+
+        double timeImprovement = ((avgTimeBefore - avgTimeAfter) / avgTimeBefore) * 100.0;
+        double speedup         = avgTimeBefore / avgTimeAfter;
+
+        System.out.println("\n╔══════════════════════════════════════════════════════════════════════╗");
+        System.out.println(  "║             VERTICAL SCALING — FINAL SUMMARY                        ║");
+        System.out.println(  "╠══════════════════════════════════════════════════════════════════════╣");
+        System.out.printf(   "║  %-34s  %8.0f  →  %8.0f MIPS   ║%n", "MIPS:",  before.getMips(),        after.getMips());
+        System.out.printf(   "║  %-34s  %8d  →  %8d cores  ║%n",     "vCPUs:", before.getNumberOfPes(), after.getNumberOfPes());
+        System.out.printf(   "║  %-34s  %8d  →  %8d MB     ║%n",     "RAM:",   before.getRam(),         after.getRam());
+        System.out.println(  "╠══════════════════════════════════════════════════════════════════════╣");
+        System.out.printf(   "║  %-34s  %8.2f  →  %8.2f s      ║%n", "Avg CPU time/cloudlet:", avgTimeBefore, avgTimeAfter);
+        System.out.printf(   "║  %-34s  %8.2f  →  %8.2f W      ║%n", "Instantaneous power:", pwBefore, pwAfter);
+        System.out.println(  "╠══════════════════════════════════════════════════════════════════════╣");
+        System.out.printf(   "║  Performance improvement (time)      :  %7.1f %%                   ║%n", timeImprovement);
+        System.out.printf(   "║  Speed-up factor                     :  %7.2f ×                   ║%n", speedup);
+        System.out.println(  "╚══════════════════════════════════════════════════════════════════════╝");
+    }
+
+
+
+
+
+    private static double avgCpuTime(List<Cloudlet> list) {
+        return list.stream()
+                .filter(c -> c.getStatus() == Cloudlet.CloudletStatus.SUCCESS)
+                .mapToDouble(Cloudlet::getActualCPUTime)
+                .average().orElse(0);
     }
 }
