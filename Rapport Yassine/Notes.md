@@ -673,20 +673,6 @@ mvn -e exec:java -pl modules/cloudsim-examples/ "-Dexec.mainClass=org.cloudbus.c
 
 
 
-----------------------
-### VM Migration : 
-
-<p align="center">
-<img src="Images/MigrationExamples.png" alt="Description" />
-</p>
-
-
-#### Notes :
-
-String **vmAllocationPolicy** = "Iqr" | "Lrr" | "Mad" | "Thr";
-
-
-String **vmSelectionPolicy** = "Mc" | "Mmt" | "Mu" | "Rs" ;
 
 ----------------------
 ### Vertical & Horizontal Scaling : 
@@ -808,6 +794,75 @@ Résultats :
 </p>
 
 
-#### vertical scaling example to check  
-#### migration example to check 
+
+----------------------
+### VM Migration :
+En cloudSim 7G les politiques de migration sont repartis  : 
+<p align="center">
+<img src="Images/MigrationExamples.png" alt="Description" />
+</p>
+
+----------------
+
+#### Notes :
+
+où placer les VMs?
+
+String **vmAllocationPolicy** = "Iqr" | "Lrr" | "Mad" | "Thr";
+
+quelle VM déplacer?
+
+String **vmSelectionPolicy** = "Mc" | "Mmt" | "Mu" | "Rs" ;
+
+---------------------
+
+**En CloudSimPlus :** la nouvelle architecture de migration policies
+<p align="center">
+<img src="Images/VmAllocationpolicyCloudSimPlus.png" alt="Description" />
+</p>
+
+
+- **VmAllocationPolicyMigrationStaticThreshold** : fixe un seuil CPU. e.g : Si host CPU > 70%
+  → migration
+- **BestFitStaticThreshold** == **BestFit** : choisit le host le plus rempli possible
+  sans dépasser le seuil
+- **WorstFitStaticThreshold** == **WorstFit** : choisit le host le moins chargé 
+- **DynamicUpperThreshold** : la seuil n'est pas fixe : Le système calcule dynamiquement le seuil selon :
+historique CPU & le comportement charge
+- **MigrationNull** : pas de migration 
+
+<p align="center">
+<img src="Images/VmSelectionPolicyCloudSimPlus.png" alt="Description" />
+</p>
+
+- **MinimumMigrationTime** :	migrer la VM la plus rapide
+- **MinimumUtilization** :	migrer la VM la moins utilisée
+- **Null** : aucune sélection
+- **RandomSelection** : VM aléatoire
+
+
+------------
+
+
+
+**VmMigrationExample**
+
+On demande 12 vCPUs
+
+mais on n’a que : 8 CPUs physiques
+
+Donc :
+
+4 VMs peuvent être placées
+2 VMs ne trouvent aucun host
+
+en output : 
+<p align="center">
+<img src="Images/migration.png" alt="Description" />
+</p>
+
+
+Solution : soit en reduit en nombre de VM (4 au lieu de 6)
+ou on ajoute des hotes (3 hosts)
+
 
