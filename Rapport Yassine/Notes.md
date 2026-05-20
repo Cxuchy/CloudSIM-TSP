@@ -866,3 +866,6 @@ Solution : soit en reduit en nombre de VM (4 au lieu de 6)
 ou on ajoute des hotes (3 hosts)
 
 
+<p align="center">
+<img src="Images/migrationstaticthreshold.png" alt="Description" />
+</p>
